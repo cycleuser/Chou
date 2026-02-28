@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chou"
+dynamic = ["version"]
+description = "Academic paper PDF renaming tool - 学术论文PDF重命名工具"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    {name = "cycleuser"},
+]
+keywords = ["academic", "paper", "pdf", "rename", "citation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "PyMuPDF>=1.23.0",
+]
+
+[project.optional-dependencies]
+gui = [
+    "PySide6>=6.5.0",
+]
+test = [
+    "pytest>=7.0",
+]
+ocr-surya = [
+    "surya-ocr>=0.14.0",
+]
+ocr-paddle = [
+    "paddleocr>=2.7.0",
+    "paddlepaddle>=2.5.0",
+]
+ocr-rapid = [
+    "rapidocr-onnxruntime>=1.3.0",
+]
+ocr-easy = [
+    "easyocr>=1.7.0",
+]
+ocr-tesseract = [
+    "pytesseract>=0.3.10",
+    "Pillow>=9.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cycleuser/Chou"
+Repository = "https://github.com/cycleuser/Chou"
+Issues = "https://github.com/cycleuser/Chou/issues"
+
+[project.scripts]
+chou = "chou.cli.main:main"
+chou-gui = "chou.gui.main:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "chou.__version__.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["chou*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

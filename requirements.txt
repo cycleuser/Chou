@@ -1,0 +1,32 @@
+# Chou - Academic Paper PDF Renamer
+# Core dependencies
+PyMuPDF>=1.23.0
+
+# ============================================
+# Optional OCR backends (install as needed)
+# ============================================
+
+# Surya OCR - Transformer-based multilingual OCR (recommended)
+# pip install surya-ocr>=0.14.0
+
+# PaddleOCR - Baidu's OCR engine (good for Chinese)
+# pip install paddleocr>=2.7.0 paddlepaddle>=2.5.0
+
+# RapidOCR - Lightweight ONNX-based OCR
+# pip install rapidocr-onnxruntime>=1.3.0
+
+# EasyOCR - PyTorch-based multilingual OCR
+# pip install easyocr>=1.7.0
+
+# Tesseract OCR - Classic open-source OCR
+# pip install pytesseract>=0.3.10 Pillow>=9.0
+
+# ============================================
+# Optional GUI support
+# ============================================
+# pip install PySide6>=6.5.0
+
+# ============================================
+# Development/Testing
+# ============================================
+# pip install pytest>=7.0

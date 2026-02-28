@@ -1,0 +1,276 @@
+2026-02-27 23:42:44,298 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-27 23:42:44,300 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-27 23:42:44,300 - INFO - Use --execute or -x flag to actually rename files
+2026-02-27 23:42:44,442 - INFO - Processing directory: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-27 23:42:44,450 - WARNING - Directory not found: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\AAAI_37
+2026-02-27 23:42:44,461 - WARNING - Directory not found: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\AAAI_38
+2026-02-27 23:42:44,468 - WARNING - Directory not found: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\AAAI_39
+2026-02-27 23:42:44,469 - INFO - ============================================================
+2026-02-27 23:42:44,471 - INFO - SUMMARY:
+2026-02-27 23:42:44,471 - INFO -   Success: 0
+2026-02-27 23:42:44,472 - INFO -   Skipped: 0
+2026-02-27 23:42:44,472 - INFO -   Errors:  0
+2026-02-27 23:42:44,473 - INFO - ============================================================
+2026-02-27 23:42:44,582 - INFO - Results saved to: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\rename_results.csv
+2026-02-27 23:44:33,101 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-27 23:44:33,102 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-27 23:44:33,102 - INFO - Use --execute or -x flag to actually rename files
+2026-02-27 23:44:33,118 - INFO - Processing directory: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-27 23:44:33,159 - INFO - Found 2 PDF files under \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-27 23:44:33,321 - WARNING - Could not extract valid info from: 1-s2.0-S0098300422001650-main.pdf (author=None)
+2026-02-27 23:44:33,718 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-27 23:44:33,718 - INFO - ============================================================
+2026-02-27 23:44:33,719 - INFO - SUMMARY:
+2026-02-27 23:44:33,720 - INFO -   Success: 0
+2026-02-27 23:44:33,720 - INFO -   Skipped: 2
+2026-02-27 23:44:33,721 - INFO -   Errors:  0
+2026-02-27 23:44:33,721 - INFO - ============================================================
+2026-02-27 23:44:33,734 - INFO - Results saved to: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\rename_results.csv
+2026-02-28 00:11:07,728 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 00:11:07,729 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 00:11:07,730 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 00:11:07,743 - INFO - Processing directory: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-28 00:11:07,788 - INFO - Found 2 PDF files under \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-28 00:11:07,896 - WARNING - Could not extract valid info from: 1-s2.0-S0098300422001650-main.pdf (author=None)
+2026-02-28 00:11:08,241 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-28 00:11:08,242 - INFO - ============================================================
+2026-02-28 00:11:08,243 - INFO - SUMMARY:
+2026-02-28 00:11:08,243 - INFO -   Success: 0
+2026-02-28 00:11:08,244 - INFO -   Skipped: 2
+2026-02-28 00:11:08,244 - INFO -   Errors:  0
+2026-02-28 00:11:08,245 - INFO - ============================================================
+2026-02-28 00:11:08,252 - INFO - Results saved to: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\rename_results.csv
+2026-02-28 00:11:22,196 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 00:11:22,197 - INFO - EXECUTE MODE - Files will be renamed!
+2026-02-28 00:11:24,077 - INFO - Processing directory: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-28 00:11:24,121 - INFO - Found 2 PDF files under \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou
+2026-02-28 00:11:24,238 - WARNING - Could not extract valid info from: 1-s2.0-S0098300422001650-main.pdf (author=None)
+2026-02-28 00:11:24,590 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-28 00:11:24,591 - INFO - ============================================================
+2026-02-28 00:11:24,591 - INFO - SUMMARY:
+2026-02-28 00:11:24,592 - INFO -   Success: 0
+2026-02-28 00:11:24,592 - INFO -   Skipped: 2
+2026-02-28 00:11:24,593 - INFO -   Errors:  0
+2026-02-28 00:11:24,593 - INFO - ============================================================
+2026-02-28 00:11:24,602 - INFO - Results saved to: \\vmware-host\Shared Folders\Home\Documents\GitHub\Chou\rename_results.csv
+2026-02-28 08:33:50,637 - ERROR - PyMuPDF not installed. Run: pip install PyMuPDF
+2026-02-28 08:34:07,624 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 08:34:07,624 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 08:34:07,624 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 08:34:07,624 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:34:07,624 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:34:12,655 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:34:13,714 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:34:23,299 - ERROR - Error reading /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf: document closed
+2026-02-28 08:34:23,301 - WARNING - Could not extract valid info from: 1-s2.0-S0098300422001650-main.pdf (author=None)
+2026-02-28 08:34:23,545 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:34:25,886 - ERROR - Error reading /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf: document closed
+2026-02-28 08:34:25,886 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-28 08:34:25,886 - INFO - ============================================================
+2026-02-28 08:34:25,886 - INFO - SUMMARY:
+2026-02-28 08:34:25,886 - INFO -   Success: 0
+2026-02-28 08:34:25,886 - INFO -   Skipped: 2
+2026-02-28 08:34:25,886 - INFO -   Errors:  0
+2026-02-28 08:34:25,886 - INFO - ============================================================
+2026-02-28 08:34:25,887 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 08:35:54,750 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 08:35:54,750 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 08:35:54,750 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 08:35:54,750 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:35:54,751 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:35:58,062 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:35:58,648 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:36:07,510 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:36:07,668 - WARNING - Could not extract valid info from: 1-s2.0-S0098300422001650-main.pdf (author=None)
+2026-02-28 08:36:07,912 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:36:10,211 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 08:36:10,278 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-28 08:36:10,278 - INFO - ============================================================
+2026-02-28 08:36:10,278 - INFO - SUMMARY:
+2026-02-28 08:36:10,278 - INFO -   Success: 0
+2026-02-28 08:36:10,278 - INFO -   Skipped: 2
+2026-02-28 08:36:10,278 - INFO -   Errors:  0
+2026-02-28 08:36:10,278 - INFO - ============================================================
+2026-02-28 08:36:10,278 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 08:36:50,501 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:36:51,094 - INFO - OCR: processing test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:36:59,917 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:37:22,502 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:37:23,101 - INFO - OCR: processing test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:37:26,354 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 08:40:32,850 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 08:40:32,850 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 08:40:32,850 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 08:40:32,850 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:40:32,850 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:40:36,147 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:40:36,730 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:40:45,554 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:40:45,707 - INFO - [DRY RUN] Would rename:
+  FROM: 1-s2.0-S0098300422001650-main.pdf
+  TO:   Perhaps (2022) - Department of Geography, University of Sheffield, Winter Street, Sheffield, S10 2TN, United Kingdom.pdf
+2026-02-28 08:40:45,949 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:40:48,287 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 08:40:48,354 - INFO - [DRY RUN] Would rename:
+  FROM: 量子相空间动力学过程研究_徐峰.pdf
+  TO:   徐 (2014) - 量子相空间动力学过程研究.pdf
+2026-02-28 08:40:48,354 - INFO - ============================================================
+2026-02-28 08:40:48,354 - INFO - SUMMARY:
+2026-02-28 08:40:48,354 - INFO -   Success: 2
+2026-02-28 08:40:48,354 - INFO -   Skipped: 0
+2026-02-28 08:40:48,354 - INFO -   Errors:  0
+2026-02-28 08:40:48,354 - INFO - ============================================================
+2026-02-28 08:40:48,354 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 08:41:57,965 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 08:41:57,965 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 08:41:57,965 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 08:41:57,965 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:41:57,966 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:42:00,828 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:42:01,309 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:42:09,957 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:42:10,107 - INFO - [DRY RUN] Would rename:
+  FROM: 1-s2.0-S0098300422001650-main.pdf
+  TO:   Perhaps (2022) - Tracking explosive volcanic phenomena can provide important information for hazard monitoring and volcano.pdf
+2026-02-28 08:42:10,350 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:42:12,622 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 08:42:12,689 - INFO - [DRY RUN] Would rename:
+  FROM: 量子相空间动力学过程研究_徐峰.pdf
+  TO:   徐 (2014) - 量子相空间动力学过程研究.pdf
+2026-02-28 08:42:12,689 - INFO - ============================================================
+2026-02-28 08:42:12,689 - INFO - SUMMARY:
+2026-02-28 08:42:12,689 - INFO -   Success: 2
+2026-02-28 08:42:12,689 - INFO -   Skipped: 0
+2026-02-28 08:42:12,689 - INFO -   Errors:  0
+2026-02-28 08:42:12,689 - INFO - ============================================================
+2026-02-28 08:42:12,689 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 08:42:33,684 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:42:34,181 - INFO - OCR: processing test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:42:42,756 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:43:08,173 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 08:43:08,173 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 08:43:08,173 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 08:43:08,173 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:43:08,173 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:43:11,040 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:43:11,512 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:43:20,097 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:43:20,249 - INFO - [DRY RUN] Would rename:
+  FROM: 1-s2.0-S0098300422001650-main.pdf
+  TO:   Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf
+2026-02-28 08:43:20,489 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:43:22,734 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 08:43:22,800 - INFO - [DRY RUN] Would rename:
+  FROM: 量子相空间动力学过程研究_徐峰.pdf
+  TO:   徐 (2014) - 量子相空间动力学过程研究.pdf
+2026-02-28 08:43:22,800 - INFO - ============================================================
+2026-02-28 08:43:22,800 - INFO - SUMMARY:
+2026-02-28 08:43:22,800 - INFO -   Success: 2
+2026-02-28 08:43:22,800 - INFO -   Skipped: 0
+2026-02-28 08:43:22,800 - INFO -   Errors:  0
+2026-02-28 08:43:22,801 - INFO - ============================================================
+2026-02-28 08:43:22,801 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 08:50:09,982 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 08:50:09,983 - INFO - EXECUTE MODE - Files will be renamed!
+2026-02-28 08:50:09,983 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:50:09,983 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 08:50:12,906 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 08:50:13,402 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 08:50:22,065 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 08:50:22,249 - INFO - Renamed: 1-s2.0-S0098300422001650-main.pdf -> Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf
+2026-02-28 08:50:22,490 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 08:50:24,757 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 08:50:24,824 - INFO - Renamed: 量子相空间动力学过程研究_徐峰.pdf -> 徐 (2014) - 量子相空间动力学过程研究.pdf
+2026-02-28 08:50:24,824 - INFO - ============================================================
+2026-02-28 08:50:24,824 - INFO - SUMMARY:
+2026-02-28 08:50:24,825 - INFO -   Success: 2
+2026-02-28 08:50:24,825 - INFO -   Skipped: 0
+2026-02-28 08:50:24,825 - INFO -   Errors:  0
+2026-02-28 08:50:24,825 - INFO - ============================================================
+2026-02-28 08:50:24,825 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 09:37:08,188 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 09:37:08,188 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 09:37:08,188 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 09:37:08,188 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:08,188 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:11,395 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 09:37:12,010 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf with surya (up to 1 pages)
+2026-02-28 09:37:12,485 - WARNING -   OCR failed on page 1: [Errno 32] Broken pipe
+2026-02-28 09:37:12,487 - INFO - OCR: extracted 0 chars from 1 pages
+2026-02-28 09:37:12,488 - WARNING - Could not extract valid info from: Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf (author=None)
+2026-02-28 09:37:12,736 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 09:37:13,488 - WARNING -   OCR failed on page 1: [Errno 32] Broken pipe
+2026-02-28 09:37:13,501 - INFO - OCR: extracted 0 chars from 1 pages
+2026-02-28 09:37:13,501 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-28 09:37:13,501 - INFO - ============================================================
+2026-02-28 09:37:13,501 - INFO - SUMMARY:
+2026-02-28 09:37:13,501 - INFO -   Success: 0
+2026-02-28 09:37:13,501 - INFO -   Skipped: 2
+2026-02-28 09:37:13,501 - INFO -   Errors:  0
+2026-02-28 09:37:13,501 - INFO - ============================================================
+2026-02-28 09:37:13,502 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 09:37:20,830 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 09:37:20,830 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 09:37:20,830 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 09:37:20,830 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:20,830 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:24,042 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 09:37:24,659 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf with surya (up to 1 pages)
+2026-02-28 09:37:25,140 - WARNING -   OCR failed on page 1: [Errno 32] Broken pipe
+2026-02-28 09:37:25,143 - INFO - OCR: extracted 0 chars from 1 pages
+2026-02-28 09:37:25,145 - WARNING - Could not extract valid info from: Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf (author=None)
+2026-02-28 09:37:25,396 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 09:37:26,158 - WARNING -   OCR failed on page 1: [Errno 32] Broken pipe
+2026-02-28 09:37:26,161 - INFO - OCR: extracted 0 chars from 1 pages
+2026-02-28 09:37:26,161 - WARNING - Could not extract valid info from: 量子相空间动力学过程研究_徐峰.pdf (author=None)
+2026-02-28 09:37:26,161 - INFO - ============================================================
+2026-02-28 09:37:26,161 - INFO - SUMMARY:
+2026-02-28 09:37:26,161 - INFO -   Success: 0
+2026-02-28 09:37:26,161 - INFO -   Skipped: 2
+2026-02-28 09:37:26,161 - INFO -   Errors:  0
+2026-02-28 09:37:26,161 - INFO - ============================================================
+2026-02-28 09:37:26,172 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 09:37:33,369 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 09:37:33,369 - INFO - DRY RUN MODE - No files will be renamed
+2026-02-28 09:37:33,369 - INFO - Use --execute or -x flag to actually rename files
+2026-02-28 09:37:33,369 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:33,369 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:36,587 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 09:37:37,197 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf with surya (up to 1 pages)
+2026-02-28 09:37:46,037 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 09:37:46,189 - INFO - Already named correctly: Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf
+2026-02-28 09:37:46,430 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 09:37:48,747 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 09:37:48,815 - INFO - [DRY RUN] Would rename:
+  FROM: 量子相空间动力学过程研究_徐峰.pdf
+  TO:   徐峰 (2014) - 量子相空间动力学过程研究.pdf
+2026-02-28 09:37:48,815 - INFO - ============================================================
+2026-02-28 09:37:48,815 - INFO - SUMMARY:
+2026-02-28 09:37:48,815 - INFO -   Success: 1
+2026-02-28 09:37:48,815 - INFO -   Skipped: 1
+2026-02-28 09:37:48,815 - INFO -   Errors:  0
+2026-02-28 09:37:48,815 - INFO - ============================================================
+2026-02-28 09:37:48,815 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 09:37:57,464 - INFO - Author format: first_surname - First author surname only (e.g., Wang)
+2026-02-28 09:37:57,464 - INFO - EXECUTE MODE - Files will be renamed!
+2026-02-28 09:37:57,464 - INFO - Processing directory: /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:37:57,464 - INFO - Found 2 PDF files under /home/fred/Documents/GitHub/Chou/test
+2026-02-28 09:38:00,722 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 09:38:01,302 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf with surya (up to 1 pages)
+2026-02-28 09:38:10,151 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 09:38:10,317 - INFO - Already named correctly: Wilkes et al. (2022) - Semantic segmentation of explosive volcanic plumes through deep learning.pdf
+2026-02-28 09:38:10,561 - INFO - OCR: processing /home/fred/Documents/GitHub/Chou/test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 09:38:12,873 - INFO - OCR: extracted 257 chars from 1 pages
+2026-02-28 09:38:12,945 - INFO - Renamed: 量子相空间动力学过程研究_徐峰.pdf -> 徐峰 (2014) - 量子相空间动力学过程研究.pdf
+2026-02-28 09:38:12,945 - INFO - ============================================================
+2026-02-28 09:38:12,945 - INFO - SUMMARY:
+2026-02-28 09:38:12,945 - INFO -   Success: 1
+2026-02-28 09:38:12,945 - INFO -   Skipped: 1
+2026-02-28 09:38:12,945 - INFO -   Errors:  0
+2026-02-28 09:38:12,945 - INFO - ============================================================
+2026-02-28 09:38:12,945 - INFO - Results saved to: /home/fred/Documents/GitHub/Chou/test/rename_results.csv
+2026-02-28 09:50:25,111 - INFO - Initializing Surya OCR engine (may download models on first run)...
+2026-02-28 09:50:25,738 - INFO - OCR: processing test/1-s2.0-S0098300422001650-main.pdf with surya (up to 1 pages)
+2026-02-28 09:50:34,809 - INFO - OCR: extracted 5286 chars from 1 pages
+2026-02-28 09:50:35,210 - INFO - OCR: processing test/量子相空间动力学过程研究_徐峰.pdf with surya (up to 1 pages)
+2026-02-28 09:50:37,581 - INFO - OCR: extracted 257 chars from 1 pages
