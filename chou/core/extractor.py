@@ -20,7 +20,7 @@ def check_pymupdf() -> bool:
     return fitz is not None
 
 
-def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None) -> Optional[str]:
+def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None, device: Optional[str] = None) -> Optional[str]:
     """
     Extract text from the first page of a PDF.
     Falls back to OCR if native extraction yields too little text.
@@ -28,6 +28,7 @@ def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None) -> 
     Args:
         pdf_path: Path to the PDF file
         ocr_engine: OCR engine name, None for auto-detect, "none" to disable
+        device: Device preference: "cpu", "gpu", or None (auto)
         
     Returns:
         Text content of the first page, or None if extraction fails
@@ -47,7 +48,7 @@ def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None) -> 
 
         # OCR fallback for scanned / image-based PDFs
         if len(text.strip()) < OCR_MIN_TEXT_LENGTH and ocr_engine != "none":
-            ocr_text = extract_text_with_ocr(pdf_path, max_pages=1, engine_name=ocr_engine)
+            ocr_text = extract_text_with_ocr(pdf_path, max_pages=1, engine_name=ocr_engine, device=device)
             if ocr_text and len(ocr_text.strip()) > len(text.strip()):
                 return ocr_text
 
@@ -57,7 +58,7 @@ def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None) -> 
         return None
 
 
-def extract_multi_page_text(pdf_path: str, max_pages: int = 3, ocr_engine: Optional[str] = None) -> Optional[str]:
+def extract_multi_page_text(pdf_path: str, max_pages: int = 3, ocr_engine: Optional[str] = None, device: Optional[str] = None) -> Optional[str]:
     """
     Extract text from the first N pages of a PDF for year extraction.
     Falls back to OCR if native extraction yields too little text.
@@ -66,6 +67,7 @@ def extract_multi_page_text(pdf_path: str, max_pages: int = 3, ocr_engine: Optio
         pdf_path: Path to the PDF file
         max_pages: Maximum number of pages to extract (default: 3)
         ocr_engine: OCR engine name, None for auto-detect, "none" to disable
+        device: Device preference: "cpu", "gpu", or None (auto)
         
     Returns:
         Combined text content from pages, or None if extraction fails
@@ -91,7 +93,7 @@ def extract_multi_page_text(pdf_path: str, max_pages: int = 3, ocr_engine: Optio
 
         # OCR fallback for scanned / image-based PDFs
         if len(combined.strip()) < OCR_MIN_TEXT_LENGTH and ocr_engine != "none":
-            ocr_text = extract_text_with_ocr(pdf_path, max_pages=max_pages, engine_name=ocr_engine)
+            ocr_text = extract_text_with_ocr(pdf_path, max_pages=max_pages, engine_name=ocr_engine, device=device)
             if ocr_text and len(ocr_text.strip()) > len(combined.strip()):
                 return ocr_text
 

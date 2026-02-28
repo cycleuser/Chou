@@ -125,6 +125,19 @@ def main():
         help='Disable OCR fallback for scanned PDFs'
     )
     
+    # Device selection for OCR
+    device_group = parser.add_mutually_exclusive_group()
+    device_group.add_argument(
+        '--cpu',
+        action='store_true',
+        help='Force OCR to run on CPU only'
+    )
+    device_group.add_argument(
+        '--gpu',
+        action='store_true',
+        help='Force OCR to run on GPU (falls back to CPU if unavailable or out of memory)'
+    )
+    
     args = parser.parse_args()
     
     # Setup logging
@@ -184,11 +197,23 @@ def main():
     else:
         logger.info("OCR: disabled")
     
+    # Determine device preference
+    if args.cpu:
+        device = "cpu"
+    elif args.gpu:
+        device = "gpu"
+    else:
+        device = None  # auto: try GPU first, fall back to CPU
+    
+    if device and ocr_engine_name != "none":
+        logger.info(f"OCR device: {device}")
+    
     # Process papers
     processor = PaperProcessor(
         author_format=author_format,
         n_authors=args.num_authors,
         ocr_engine=ocr_engine_name,
+        device=device,
     )
     
     papers = processor.process_directory(args.dir, recursive=recursive)

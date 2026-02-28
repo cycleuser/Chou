@@ -33,6 +33,7 @@ class PaperProcessor:
         n_authors: int = 3,
         fallback_year: int = DEFAULT_YEAR,
         ocr_engine: Optional[str] = None,
+        device: Optional[str] = None,
     ):
         """
         Initialize processor with configuration.
@@ -42,11 +43,13 @@ class PaperProcessor:
             n_authors: Number of authors for n_* formats
             fallback_year: Year to use if extraction fails
             ocr_engine: OCR engine name (None = auto-detect, "none" = disable)
+            device: Device preference for OCR: "cpu", "gpu", or None (auto: try GPU, fall back to CPU)
         """
         self.author_format = author_format
         self.n_authors = n_authors
         self.fallback_year = fallback_year
         self.ocr_engine = ocr_engine
+        self.device = device
     
     def process_single(self, pdf_path: Path) -> PaperInfo:
         """
@@ -204,9 +207,25 @@ class PaperProcessor:
         
         # If not found on first page, search in first 3 pages
         if not year:
-            multi_page_text = extract_multi_page_text(pdf_path, max_pages=3, ocr_engine=self.ocr_engine)
+            multi_page_text = extract_multi_page_text(pdf_path, max_pages=3, ocr_engine=self.ocr_engine, device=self.device)
             if multi_page_text:
                 year = extract_year_from_text(multi_page_text)
+        
+        # Detect header zone at top of page using structural journal elements
+        # (not article-type labels like "Research Paper" which sit close to the title)
+        journal_zone_patterns = [
+            r'ScienceDirect', r'Elsevier', r'Springer',
+            r'journal\s+homepage', r'Contents\s+lists?\s+available',
+            r'HOSTED\s+BY', r'www\.', r'https?://',
+        ]
+        header_zone_y = 0
+        for block in blocks:
+            text = block["text"]
+            is_journal = any(re.search(pat, text, re.IGNORECASE) for pat in journal_zone_patterns)
+            if is_journal and block["y"] < 200:
+                header_zone_y = max(header_zone_y, block["y"])
+        if header_zone_y > 0:
+            header_zone_y += 30  # margin below last journal header block
         
         # Filter header/footer content
         content_blocks = []
@@ -214,6 +233,9 @@ class PaperProcessor:
             text = block["text"]
             is_header = any(re.search(pat, text, re.IGNORECASE) for pat in HEADER_PATTERNS)
             if is_header:
+                continue
+            # Skip blocks in header zone (journal name, article type labels)
+            if header_zone_y > 0 and block["y"] <= header_zone_y:
                 continue
             if len(text) < 5:
                 continue
@@ -235,29 +257,41 @@ class PaperProcessor:
             title_y = sorted_by_font[0]["y"]
             title_font_size = sorted_by_font[0]["font_size"]
             
-            # Combine multi-line titles
+            # Combine multi-line titles (same font size, close y positions)
+            # Collect all same-font blocks and sort by y to build the title in order
+            title_blocks = [sorted_by_font[0]]
             for block in sorted_by_font[1:]:
-                if abs(block["font_size"] - title_font_size) < 1 and block["y"] > title_y:
-                    if block["y"] - title_y < 30:
-                        title = title + " " + block["text"]
-                        title_y = block["y"]
+                if abs(block["font_size"] - title_font_size) < 1:
+                    if abs(block["y"] - title_y) < 30 or any(
+                        abs(block["y"] - tb["y"]) < 30 for tb in title_blocks
+                    ):
+                        title_blocks.append(block)
+            title_blocks.sort(key=lambda x: x["y"])
+            title = " ".join(b["text"] for b in title_blocks)
+            title_y = title_blocks[-1]["y"]
             
-            # Find authors after title
+            # Find authors after title, sorted by proximity to title
             skip_keywords = ['abstract', 'introduction', 'keyword', 'department', 
                            'university', 'college', 'school', 'institute', '{', '@']
             
-            for block in content_blocks:
-                if block["y"] > title_y:
-                    text = block["text"]
-                    if any(kw in text.lower() for kw in skip_keywords):
-                        continue
-                    if ',' in text or '*' in text:
-                        authors_text = text
-                        break
-                    name_pattern = r'\b[A-Z][a-z]+ [A-Z][a-z]+'
-                    if re.search(name_pattern, text):
-                        authors_text = text
-                        break
+            candidate_blocks = sorted(
+                [b for b in content_blocks if b["y"] > title_y],
+                key=lambda x: x["y"]
+            )
+            
+            for block in candidate_blocks:
+                if block["y"] - title_y > 150:
+                    break
+                text = block["text"]
+                if any(kw in text.lower() for kw in skip_keywords):
+                    continue
+                if ',' in text or '\uff0c' in text or '*' in text:
+                    authors_text = text
+                    break
+                name_pattern = r'\b[A-Z][a-z]+ [A-Z][a-z]+'
+                if re.search(name_pattern, text):
+                    authors_text = text
+                    break
         
         authors = parse_all_authors(authors_text) if authors_text else []
         
@@ -270,15 +304,18 @@ class PaperProcessor:
         Returns:
             Tuple of (title, authors, year)
         """
-        text = extract_first_page_text(pdf_path, ocr_engine=self.ocr_engine)
+        text = extract_first_page_text(pdf_path, ocr_engine=self.ocr_engine, device=self.device)
         
         if not text:
             return None, [], None
         
+        # Strip HTML tags from OCR output (Surya produces <sup>, <b>, <br> etc.)
+        text = self._strip_ocr_html(text)
+        
         year = extract_year_from_text(text)
         
         if not year:
-            multi_page_text = extract_multi_page_text(pdf_path, max_pages=3, ocr_engine=self.ocr_engine)
+            multi_page_text = extract_multi_page_text(pdf_path, max_pages=3, ocr_engine=self.ocr_engine, device=self.device)
             if multi_page_text:
                 year = extract_year_from_text(multi_page_text)
         
@@ -296,6 +333,17 @@ class PaperProcessor:
         extended_patterns = HEADER_PATTERNS + [
             r'^\d+[-–]\d+$',  # Page ranges like "105216"
             r'^[A-Z]{3,}\s*$',  # All-caps short strings like "SFOSCIENC"
+            r'\(\d{4}\)\s*\d+[-–—]\d+',  # Journal citation: (2019) 1437-1447
+            r'^第\s*\d+\s*卷',  # Chinese volume: 第34卷
+            r'^Vol\.\s*\d+',  # Volume: Vol. 34
+            r'^DOI\s*:',  # DOI line
+            r'文章编号',  # Chinese article number
+            r'中图分类号',  # Chinese CLC code
+            r'文献标志码',  # Chinese document code
+            r'开放科学',  # Open science identifier
+            r'^\d{4}\s*年\s*\d+\s*月',  # Chinese date: 2025年4月
+            r'^[A-Z][a-z]+\.\s*\d{4}\s*$',  # English date: Apr. 2025
+            r'^No\.\s*\d+',  # Issue number
         ]
         
         # Filter headers
@@ -313,16 +361,27 @@ class PaperProcessor:
         # Better title selection with scoring
         title = None
         title_idx = 0
-        best_score = -1
+        best_score = float('-inf')
         
-        # Score each of the first 6 lines
-        for i, line in enumerate(content_lines[:6]):
+        # Score each of the first 10 lines (OCR text may have many header lines)
+        for i, line in enumerate(content_lines[:10]):
             score = len(line)
-            # Position penalty: titles appear early
-            score -= i * 15
-            # Penalize lines with colons (likely metadata)
-            if ':' in line:
-                score -= 50
+            # Position penalty: titles appear early (gentler for OCR text)
+            score -= i * 10
+            # Penalize lines with colons (likely metadata) — but mild for long lines
+            # or lines where colon appears after a short prefix (subtitle pattern)
+            if ':' in line or '\uff1a' in line:
+                colon_pos = line.find(':')
+                if colon_pos < 0:
+                    colon_pos = line.find('\uff1a')
+                rest_after_colon = line[colon_pos+1:].strip() if colon_pos >= 0 else ''
+                if len(rest_after_colon) > 15:
+                    # Colon with long content after — likely a title with subtitle
+                    score -= 5
+                elif len(line) < 40:
+                    score -= 50
+                else:
+                    score -= 15
             # Penalize lines that are mostly digits
             digit_ratio = sum(1 for c in line if c.isdigit()) / max(len(line), 1)
             if digit_ratio > 0.3:
@@ -341,31 +400,79 @@ class PaperProcessor:
             # Penalize lines with commas and asterisks (likely author lines)
             if ('*' in line or '∗' in line) and ',' in line:
                 score -= 60
+            # Penalize all-uppercase lines (likely journal name or section header)
+            if line == line.upper() and len(line) > 5:
+                score -= 60
+            # Penalize journal-name-like lines (short, title case, no verbs)
+            if len(line) < 30 and re.match(r'^[A-Z][a-z]+(\s+[A-Z][a-z]+){0,3}$', line):
+                score -= 40
             # Bonus for lines that look like academic titles
             lowercase_ratio = sum(1 for c in line if c.islower()) / max(len(line), 1)
             if lowercase_ratio > 0.5 and len(line) > 30:
                 score += 20
+            # Bonus for CJK-heavy lines that are long (likely Chinese titles)
+            cjk_count = sum(1 for c in line if '\u4e00' <= c <= '\u9fff')
+            if cjk_count > 5 and len(line) > 15:
+                score += 15
             
             if score > best_score:
                 best_score = score
                 title = line
                 title_idx = i
         
+        # Combine multi-line titles: check if next line is a continuation
+        if title and title_idx + 1 < len(content_lines):
+            next_line = content_lines[title_idx + 1]
+            # Next line is likely a continuation if:
+            # - It's not an author line (no commas with names, no asterisks)
+            # - It doesn't start with a keyword (abstract, etc.)
+            # - It's relatively short (< title) and doesn't look like metadata
+            is_author_line = (',' in next_line or '\uff0c' in next_line) and (
+                '*' in next_line or re.search(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b', next_line))
+            is_keyword = any(kw in next_line.lower() for kw in [
+                'abstract', 'introduction', '\u6458'])
+            is_metadata = ':' in next_line and len(next_line) < 30
+            has_cjk_names = bool(re.match(r'^[\u4e00-\u9fff]{2,4}[0-9,\uff0c]', next_line))
+            if not is_author_line and not is_keyword and not is_metadata and not has_cjk_names:
+                # Looks like a title continuation
+                if len(next_line) < len(title) and len(next_line) > 5:
+                    title = title + " " + next_line
+                    title_idx += 1
+        
         # Find authors in lines after the title
         authors = []
         for line in content_lines[title_idx+1:title_idx+6]:
             if any(kw in line.lower() for kw in ['abstract', 'introduction', 'we ', 'this paper']):
                 break
+            if '\u6458' in line:  # 摘 (abstract in Chinese)
+                break
+            if '\u5173\u952e\u8bcd' in line:  # 关键词 (keywords in Chinese)
+                break
             # Skip institution/affiliation lines
             if any(kw in line.lower() for kw in ['department', 'university', 'college', 'school', 'institute']):
                 continue
             # Look for name-like patterns
-            if ',' in line or '*' in line or re.search(r'\b[A-Z]\.\w?\.\s*[A-Z]', line) or re.search(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b', line):
+            if ',' in line or '\uff0c' in line or '*' in line or re.search(r'\b[A-Z]\.\w?\.\s*[A-Z]', line) or re.search(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b', line):
                 authors = parse_all_authors(line)
                 if authors:
                     break
         
         return title, authors, year
+    
+    @staticmethod
+    def _strip_ocr_html(text: str) -> str:
+        """Strip HTML tags commonly produced by OCR engines like Surya."""
+        # Remove <sup>...</sup> entirely (footnote markers)
+        text = re.sub(r'<sup>[^<]*</sup>', '', text)
+        # Remove <sub>...</sub> entirely
+        text = re.sub(r'<sub>[^<]*</sub>', '', text)
+        # Replace <br> / <br/> with space
+        text = re.sub(r'<br\s*/?>', ' ', text)
+        # Strip remaining tags but keep content (e.g., <b>text</b> -> text)
+        text = re.sub(r'<[^>]+>', '', text)
+        # Collapse multiple spaces
+        text = re.sub(r'  +', ' ', text)
+        return text
     
     def _try_parse_chinese_thesis(self, text: str, year: int):
         """

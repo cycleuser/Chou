@@ -70,6 +70,10 @@ HEADER_PATTERNS = [
     r'^\s*updates?\s*$',
     r'ARTICLE\s+INFO',
     r'Keywords?:',
+    r'^\s*Research\s+Paper\s*$',
+    r'^\s*(Review|Original|Research)\s+(Paper|Article)\s*$',
+    r'^\s*(Short|Brief)\s+(Communication|Report)\s*$',
+    r'HOSTED\s+BY',
 ]
 
 # Default fallback year

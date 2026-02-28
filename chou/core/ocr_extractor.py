@@ -26,8 +26,21 @@ OCR_DEFAULT_MAX_PAGES = 3
 # Priority order for auto-detection
 ENGINE_PRIORITY = ["surya", "paddleocr", "rapidocr", "easyocr", "tesseract"]
 
-# Module-level engine cache: engine_name -> instance
+# Module-level engine cache: (engine_name, device) -> instance
 _engine_cache: dict = {}
+
+
+def _is_cuda_oom(exc: Exception) -> bool:
+    """Check if an exception is a CUDA out-of-memory error."""
+    msg = str(exc).lower()
+    return any(kw in msg for kw in [
+        "cuda out of memory",
+        "out of memory",
+        "cublas",
+        "cudnn",
+        "cuda error",
+        "gpu memory",
+    ])
 
 
 # ---------------------------------------------------------------------------
@@ -58,14 +71,39 @@ class OcrEngine(ABC):
 class SuryaOcrEngine(OcrEngine):
     name = "surya"
 
-    def __init__(self):
+    def __init__(self, device: Optional[str] = None):
+        import torch
         from surya.foundation import FoundationPredictor  # noqa
         from surya.recognition import RecognitionPredictor  # noqa
         from surya.detection import DetectionPredictor  # noqa
-        logger.info("Initializing Surya OCR engine (may download models on first run)...")
-        foundation = FoundationPredictor()
-        self._recognition = RecognitionPredictor(foundation)
-        self._detection = DetectionPredictor()
+
+        self._device = device  # "cpu", "gpu", or None (auto)
+
+        # Resolve actual device
+        if device == "cpu":
+            use_device = "cpu"
+        elif device == "gpu":
+            if not torch.cuda.is_available():
+                logger.warning("GPU requested but CUDA not available, falling back to CPU")
+                use_device = "cpu"
+            else:
+                use_device = "cuda"
+        else:
+            use_device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        logger.info(f"Initializing Surya OCR engine on {use_device} (may download models on first run)...")
+        try:
+            foundation = FoundationPredictor(device=use_device)
+            self._recognition = RecognitionPredictor(foundation)
+            self._detection = DetectionPredictor(device=use_device)
+        except (RuntimeError, Exception) as e:
+            if _is_cuda_oom(e) and use_device != "cpu":
+                logger.warning(f"GPU memory insufficient for Surya, retrying on CPU: {e}")
+                foundation = FoundationPredictor(device="cpu")
+                self._recognition = RecognitionPredictor(foundation)
+                self._detection = DetectionPredictor(device="cpu")
+            else:
+                raise
 
     @staticmethod
     def is_available() -> bool:
@@ -85,9 +123,25 @@ class SuryaOcrEngine(OcrEngine):
         from PIL import Image
 
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        predictions = self._recognition(
-            [img], det_predictor=self._detection
-        )
+        try:
+            predictions = self._recognition(
+                [img], det_predictor=self._detection
+            )
+        except (RuntimeError, Exception) as e:
+            if _is_cuda_oom(e):
+                logger.warning("GPU OOM during Surya OCR inference, retrying on CPU")
+                import torch
+                torch.cuda.empty_cache()
+                from surya.foundation import FoundationPredictor
+                from surya.detection import DetectionPredictor
+                foundation = FoundationPredictor(device="cpu")
+                self._recognition = self._recognition.__class__(foundation)
+                self._detection = DetectionPredictor(device="cpu")
+                predictions = self._recognition(
+                    [img], det_predictor=self._detection
+                )
+            else:
+                raise
         lines = []
         for page_pred in predictions:
             for text_line in page_pred.text_lines:
@@ -103,10 +157,33 @@ class SuryaOcrEngine(OcrEngine):
 class PaddleOcrEngine(OcrEngine):
     name = "paddleocr"
 
-    def __init__(self):
+    def __init__(self, device: Optional[str] = None):
         from paddleocr import PaddleOCR  # noqa
-        logger.info("Initializing PaddleOCR engine...")
-        self._reader = PaddleOCR(use_textline_orientation=True, lang="ch")
+
+        self._device = device
+        use_gpu = self._resolve_use_gpu(device)
+        logger.info(f"Initializing PaddleOCR engine (use_gpu={use_gpu})...")
+        try:
+            self._reader = PaddleOCR(use_textline_orientation=True, lang="ch", device="gpu" if use_gpu else "cpu")
+        except (RuntimeError, Exception) as e:
+            if _is_cuda_oom(e) and use_gpu:
+                logger.warning(f"GPU memory insufficient for PaddleOCR, retrying on CPU: {e}")
+                self._reader = PaddleOCR(use_textline_orientation=True, lang="ch", device="cpu")
+            else:
+                raise
+
+    @staticmethod
+    def _resolve_use_gpu(device: Optional[str]) -> bool:
+        if device == "cpu":
+            return False
+        if device == "gpu":
+            return True
+        # Auto: try GPU
+        try:
+            import paddle
+            return paddle.device.is_compiled_with_cuda()
+        except Exception:
+            return False
 
     @staticmethod
     def is_available() -> bool:
@@ -122,7 +199,16 @@ class PaddleOcrEngine(OcrEngine):
 
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         img_array = np.array(img)
-        results = self._reader.predict(img_array)
+        try:
+            results = self._reader.predict(img_array)
+        except (RuntimeError, Exception) as e:
+            if _is_cuda_oom(e):
+                logger.warning("GPU OOM during PaddleOCR inference, reinitializing on CPU")
+                from paddleocr import PaddleOCR
+                self._reader = PaddleOCR(use_textline_orientation=True, lang="ch", device="cpu")
+                results = self._reader.predict(img_array)
+            else:
+                raise
         lines = []
         for res in results:
             if hasattr(res, 'rec_texts') and res.rec_texts:
@@ -137,8 +223,9 @@ class PaddleOcrEngine(OcrEngine):
 class RapidOcrEngine(OcrEngine):
     name = "rapidocr"
 
-    def __init__(self):
+    def __init__(self, device: Optional[str] = None):
         from rapidocr_onnxruntime import RapidOCR  # noqa
+        # RapidOCR uses ONNX runtime (CPU-based), device param accepted for interface consistency
         logger.info("Initializing RapidOCR engine...")
         self._reader = RapidOCR()
 
@@ -172,10 +259,28 @@ class RapidOcrEngine(OcrEngine):
 class EasyOcrEngine(OcrEngine):
     name = "easyocr"
 
-    def __init__(self):
+    def __init__(self, device: Optional[str] = None):
         import easyocr  # noqa
-        logger.info("Initializing EasyOCR engine (may download models on first run)...")
-        self._reader = easyocr.Reader(["en", "ch_sim"], verbose=False)
+
+        use_gpu = device != "cpu"
+        if device == "gpu":
+            try:
+                import torch
+                if not torch.cuda.is_available():
+                    logger.warning("GPU requested but CUDA not available for EasyOCR, falling back to CPU")
+                    use_gpu = False
+            except ImportError:
+                use_gpu = False
+
+        logger.info(f"Initializing EasyOCR engine (gpu={use_gpu}, may download models on first run)...")
+        try:
+            self._reader = easyocr.Reader(["en", "ch_sim"], gpu=use_gpu, verbose=False)
+        except (RuntimeError, Exception) as e:
+            if _is_cuda_oom(e) and use_gpu:
+                logger.warning(f"GPU memory insufficient for EasyOCR, retrying on CPU: {e}")
+                self._reader = easyocr.Reader(["en", "ch_sim"], gpu=False, verbose=False)
+            else:
+                raise
 
     @staticmethod
     def is_available() -> bool:
@@ -197,10 +302,10 @@ class EasyOcrEngine(OcrEngine):
 class TesseractOcrEngine(OcrEngine):
     name = "tesseract"
 
-    def __init__(self):
+    def __init__(self, device: Optional[str] = None):
         import pytesseract  # noqa
+        # Tesseract is CPU-only, device param accepted for interface consistency
         logger.info("Initializing Tesseract OCR engine...")
-        # Verify tesseract binary is accessible
         pytesseract.get_tesseract_version()
         self._pytesseract = pytesseract
 
@@ -244,26 +349,28 @@ def get_available_engines() -> List[str]:
     return available
 
 
-def get_ocr_engine(engine_name: Optional[str] = None) -> Optional[OcrEngine]:
+def get_ocr_engine(engine_name: Optional[str] = None, device: Optional[str] = None) -> Optional[OcrEngine]:
     """
     Return an OcrEngine instance.
 
     Args:
         engine_name: Specific engine to use, or None for auto-detect
                      (picks the highest-priority installed engine).
+        device: Device preference: "cpu", "gpu", or None (auto: try GPU, fall back to CPU).
 
     Returns:
         OcrEngine instance, or None if no engine available.
     """
+    cache_key = (engine_name, device)
+
     if engine_name:
-        # Use specific engine
-        if engine_name in _engine_cache:
-            return _engine_cache[engine_name]
+        if cache_key in _engine_cache:
+            return _engine_cache[cache_key]
         cls = _ENGINE_CLASSES.get(engine_name)
         if cls and cls.is_available():
             try:
-                instance = cls()
-                _engine_cache[engine_name] = instance
+                instance = cls(device=device)
+                _engine_cache[cache_key] = instance
                 return instance
             except Exception as e:
                 logger.warning(f"Failed to initialize {engine_name}: {e}")
@@ -273,13 +380,14 @@ def get_ocr_engine(engine_name: Optional[str] = None) -> Optional[OcrEngine]:
 
     # Auto-detect: try each engine in priority order
     for name in ENGINE_PRIORITY:
-        if name in _engine_cache:
-            return _engine_cache[name]
+        key = (name, device)
+        if key in _engine_cache:
+            return _engine_cache[key]
         cls = _ENGINE_CLASSES.get(name)
         if cls and cls.is_available():
             try:
-                instance = cls()
-                _engine_cache[name] = instance
+                instance = cls(device=device)
+                _engine_cache[key] = instance
                 return instance
             except Exception as e:
                 logger.warning(f"Failed to initialize {name}: {e}")
@@ -302,6 +410,7 @@ def extract_text_with_ocr(
     max_pages: int = OCR_DEFAULT_MAX_PAGES,
     dpi: int = OCR_DEFAULT_DPI,
     engine_name: Optional[str] = None,
+    device: Optional[str] = None,
 ) -> str:
     """
     Extract text from a PDF using OCR.
@@ -313,6 +422,7 @@ def extract_text_with_ocr(
         max_pages: Maximum number of pages to process
         dpi: Rendering resolution (higher = more accurate but slower)
         engine_name: Specific OCR engine, or None for auto-detect
+        device: Device preference: "cpu", "gpu", or None (auto)
 
     Returns:
         Extracted text, or empty string on failure
@@ -323,7 +433,7 @@ def extract_text_with_ocr(
         logger.error("PyMuPDF is required for OCR extraction")
         return ""
 
-    engine = get_ocr_engine(engine_name)
+    engine = get_ocr_engine(engine_name, device=device)
     if engine is None:
         logger.debug("No OCR engine available")
         return ""
