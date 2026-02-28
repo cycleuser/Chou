@@ -190,6 +190,20 @@ pip install chou[gui]
 chou-gui
 ```
 
+### Screenshots
+
+**1. Initial Window** - Drag & drop PDFs or use toolbar to add files:
+
+![Initial Window](images/01_initial.png)
+
+**2. After Processing** - Extracted title, authors, year with preview of new filenames:
+
+![Processed Results](images/02_processed.png)
+
+**3. Renamed Files** - Files renamed to citation-style format in file manager:
+
+![Renamed Files](images/03-results.png)
+
 ## Development
 
 ```bash

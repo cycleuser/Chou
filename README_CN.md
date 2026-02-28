@@ -200,6 +200,20 @@ pip install chou[gui]
 chou-gui
 ```
 
+### 界面截图
+
+**1. 初始界面** - 拖拽 PDF 文件或使用工具栏添加文件：
+
+![初始界面](images/01_initial.png)
+
+**2. 处理完成** - 提取的标题、作者、年份，以及新文件名预览：
+
+![处理结果](images/02_processed.png)
+
+**3. 重命名后** - 文件管理器中显示的引用格式文件名：
+
+![重命名后的文件](images/03-results.png)
+
 ## 开发
 
 ```bash
