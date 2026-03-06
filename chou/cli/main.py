@@ -2,6 +2,7 @@
 Chou CLI - Command Line Interface
 """
 
+import json
 import sys
 import argparse
 import logging
@@ -109,6 +110,19 @@ def main():
         help='Verbose output'
     )
     
+    parser.add_argument(
+        '--json',
+        action='store_true',
+        dest='json_output',
+        help='Output results as JSON'
+    )
+    
+    parser.add_argument(
+        '--quiet', '-q',
+        action='store_true',
+        help='Suppress non-essential output'
+    )
+    
     # OCR options
     ocr_engines = get_available_engines()
     parser.add_argument(
@@ -140,8 +154,12 @@ def main():
     
     args = parser.parse_args()
     
-    # Setup logging
-    setup_logging(args.log_file, args.verbose)
+    # Setup logging (quiet suppresses console output)
+    if args.quiet:
+        setup_logging(args.log_file, verbose=False)
+        logging.getLogger().setLevel(logging.WARNING)
+    else:
+        setup_logging(args.log_file, args.verbose)
     logger = logging.getLogger(__name__)
     
     # Determine dry_run mode
@@ -244,13 +262,34 @@ def main():
         export_results_csv(papers, args.output)
         logger.info(f"Results saved to: {args.output}")
     
-    # Summary
-    logger.info("=" * 60)
-    logger.info("SUMMARY:")
-    logger.info(f"  Total:   {len(papers)}")
-    logger.info(f"  Success: {success_count}")
-    logger.info(f"  Errors:  {error_count}")
-    logger.info("=" * 60)
+    # JSON output mode
+    if args.json_output:
+        result = {
+            "total": len(papers),
+            "success": success_count,
+            "errors": error_count,
+            "papers": [
+                {
+                    "original": p.original_filename,
+                    "new": p.new_filename or None,
+                    "title": p.title or None,
+                    "authors": [a.surname for a in p.authors],
+                    "year": p.year or None,
+                    "status": p.status,
+                    "error": p.error_message or None,
+                }
+                for p in papers
+            ],
+        }
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        # Summary
+        logger.info("=" * 60)
+        logger.info("SUMMARY:")
+        logger.info(f"  Total:   {len(papers)}")
+        logger.info(f"  Success: {success_count}")
+        logger.info(f"  Errors:  {error_count}")
+        logger.info("=" * 60)
     
     return 0 if error_count == 0 else 1
 

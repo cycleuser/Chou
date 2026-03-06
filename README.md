@@ -217,6 +217,46 @@ pytest
 pytest -v
 ```
 
+## Python API
+
+```python
+from chou import rename_papers
+
+result = rename_papers(
+    "./papers",
+    author_format="first_surname",
+    dry_run=True,
+)
+print(result.success)    # True / False
+print(result.data)       # list of paper dicts
+print(result.metadata)   # summary stats
+```
+
+## Agent Integration (OpenAI Function Calling)
+
+Chou exposes an OpenAI-compatible tool for LLM agents:
+
+```python
+from chou.tools import TOOLS, dispatch
+
+# Pass TOOLS to the OpenAI chat completion API
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    tools=TOOLS,
+)
+
+# Dispatch the tool call
+result = dispatch(
+    tool_call.function.name,
+    tool_call.function.arguments,
+)
+```
+
+## CLI Help
+
+![CLI Help](images/chou_help.png)
+
 ## License
 
 MIT License

@@ -227,6 +227,46 @@ pytest
 pytest -v
 ```
 
+## Python API
+
+```python
+from chou import rename_papers
+
+result = rename_papers(
+    "./papers",
+    author_format="first_surname",
+    dry_run=True,
+)
+print(result.success)    # True / False
+print(result.data)       # 论文信息列表
+print(result.metadata)   # 统计摘要
+```
+
+## Agent 集成（OpenAI Function Calling）
+
+Chou 提供 OpenAI 兼容的工具定义，可供 LLM Agent 调用：
+
+```python
+from chou.tools import TOOLS, dispatch
+
+# 将 TOOLS 传入 OpenAI chat completion API
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    tools=TOOLS,
+)
+
+# 分发工具调用
+result = dispatch(
+    tool_call.function.name,
+    tool_call.function.arguments,
+)
+```
+
+## CLI 帮助
+
+![CLI 帮助](images/chou_help.png)
+
 ## 许可证
 
 MIT License

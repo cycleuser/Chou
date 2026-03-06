@@ -1,0 +1,46 @@
+usage: chou [-h] [--version] [--dir DIR] [--recursive] [--no-recursive]
+            [--dry-run] [--execute]
+            [--format {first_surname,first_full,all_surnames,all_full,n_surnames,n_full}]
+            [--num-authors NUM_AUTHORS] [--output OUTPUT]
+            [--log-file LOG_FILE] [--verbose] [--json] [--quiet]
+            [--ocr-engine OCR_ENGINE] [--no-ocr] [--cpu | --gpu]
+
+chou (瞅) - Academic Paper PDF Renaming Tool
+
+options:
+  -h, --help            show this help message and exit
+  --version, -V         show program's version number and exit
+  --dir DIR, -d DIR     Directory containing PDF files (default: current
+                        directory)
+  --recursive, -r       Process subdirectories recursively (default: True)
+  --no-recursive        Only process the specified directory, not
+                        subdirectories
+  --dry-run, -n         Preview changes without renaming (default: True)
+  --execute, -x         Actually rename files (disables dry-run)
+  --format {first_surname,first_full,all_surnames,all_full,n_surnames,n_full}, -f {first_surname,first_full,all_surnames,all_full,n_surnames,n_full}
+                        Author name format (default: first_surname)
+  --num-authors NUM_AUTHORS, -N NUM_AUTHORS
+                        Number of authors for n_surnames/n_full formats
+                        (default: 3)
+  --output OUTPUT, -o OUTPUT
+                        Export results to CSV file
+  --log-file LOG_FILE, -l LOG_FILE
+                        Log file path
+  --verbose, -v         Verbose output
+  --json                Output results as JSON
+  --quiet, -q           Suppress non-essential output
+  --ocr-engine OCR_ENGINE
+                        OCR engine to use (available: surya, rapidocr,
+                        tesseract). Default: auto-detect best available.
+  --no-ocr              Disable OCR fallback for scanned PDFs
+  --cpu                 Force OCR to run on CPU only
+  --gpu                 Force OCR to run on GPU (falls back to CPU if
+                        unavailable or out of memory)
+
+Author format options:
+  first_surname: First author surname only (e.g., Wang)
+  first_full: First author full name (e.g., Weihao Wang)
+  all_surnames: All authors surnames (e.g., Wang, Zhang, You)
+  all_full: All authors full names (e.g., Weihao Wang, Rufeng Zhang)
+  n_surnames: First N authors surnames
+  n_full: First N authors full names
