@@ -1,62 +1,34 @@
 @echo off
-REM Chou - Upload to PyPI
-REM Usage: upload_pypi.bat [--test]
+REM Chou - Build and upload to PyPI
+setlocal
+cd /d "%~dp0"
 
-setlocal enabledelayedexpansion
+set "PYTHON=C:\Miniconda3\envs\dev\python.exe"
+set "VERSION_FILE=chou\__version__.py"
 
-echo === Chou PyPI Upload Script ===
+echo === Chou PyPI Upload ===
 
-REM Get version from __version__.py
-for /f "tokens=*" %%i in ('python -c "from chou.__version__ import __version__; print(__version__)"') do set VERSION=%%i
-echo Version: %VERSION%
+echo [1/5] Bumping patch version...
+%PYTHON% -c "import re,sys;p='%VERSION_FILE%'.replace('\\','/');t=open(p,encoding='utf-8').read();m=re.search(r'(__version__\s*=\s*\"(\d+\.\d+\.)(\d+)\")',t);old=m.group(2)+m.group(3);new=m.group(2)+str(int(m.group(3))+1);open(p,'w',encoding='utf-8').write(t.replace(m.group(1),'__version__ = \"'+new+'\"'));print(f'  {old} -> {new}')"
+if %errorlevel% neq 0 (echo Version bump failed! & exit /b 1)
 
-REM Check for --test flag
-if "%1"=="--test" (
-    set REPO=testpypi
-    echo Uploading to TestPyPI
-) else (
-    set REPO=pypi
-    echo Uploading to PyPI
-)
-
-REM Clean previous builds
-echo Cleaning previous builds...
+echo [2/5] Cleaning old builds...
 if exist dist rmdir /s /q dist
 if exist build rmdir /s /q build
-if exist *.egg-info rmdir /s /q *.egg-info
-if exist chou.egg-info rmdir /s /q chou.egg-info
+for /d %%i in (*.egg-info) do rmdir /s /q "%%i"
 
-REM Build the package
-echo Building package...
-python -m pip install --upgrade build twine -q
-python -m build
-if errorlevel 1 (
-    echo Build failed!
-    exit /b 1
-)
+echo [3/5] Installing build tools...
+%PYTHON% -m pip install --upgrade build twine -q
 
-REM Check the distribution
-echo Checking distribution...
-python -m twine check dist/*
-if errorlevel 1 (
-    echo Distribution check failed!
-    exit /b 1
-)
+echo [4/5] Building package...
+%PYTHON% -m build
+if %errorlevel% neq 0 (echo Build failed! & exit /b 1)
+%PYTHON% -m twine check dist\*
+if %errorlevel% neq 0 (echo Check failed! & exit /b 1)
 
-REM Upload to PyPI
-echo Uploading to %REPO%...
-if "%REPO%"=="testpypi" (
-    python -m twine upload --repository testpypi dist/*
-) else (
-    python -m twine upload dist/*
-)
+echo [5/5] Uploading to PyPI...
+%PYTHON% -m twine upload dist\*
+if %errorlevel% neq 0 (echo Upload failed! & exit /b 1)
 
-if errorlevel 1 (
-    echo Upload failed!
-    exit /b 1
-)
-
-echo Done! Chou v%VERSION% uploaded to %REPO%
-echo Install with: pip install chou
-
+echo === Done! ===
 endlocal

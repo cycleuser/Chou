@@ -1,52 +1,37 @@
-#!/bin/bash
-# Chou - Upload to PyPI
-# Usage: ./upload_pypi.sh [--test]
-
+#!/usr/bin/env bash
+# Chou - Build and upload to PyPI
 set -e
+cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+PYTHON="C:/Miniconda3/envs/dev/python.exe"
+VERSION_FILE="chou/__version__.py"
 
-echo -e "${GREEN}=== Chou PyPI Upload Script ===${NC}"
+echo "=== Chou PyPI Upload ==="
 
-# Get version from __version__.py
-VERSION=$(python3 -c "from chou.__version__ import __version__; print(__version__)")
-echo -e "Version: ${YELLOW}${VERSION}${NC}"
+echo "[1/5] Bumping patch version..."
+"$PYTHON" -c "
+import re, sys
+p = '$VERSION_FILE'
+t = open(p,encoding='utf-8').read()
+m = re.search(r'(__version__\s*=\s*\"(\d+\.\d+\.)(\d+)\")', t)
+if not m: print('ERROR: cannot parse version'); sys.exit(1)
+old_v = m.group(2) + m.group(3)
+new_v = m.group(2) + str(int(m.group(3)) + 1)
+open(p,'w',encoding='utf-8').write(t.replace(m.group(1), '__version__ = \"' + new_v + '\"'))
+print(f'  {old_v} -> {new_v}')
+"
 
-# Check for --test flag
-if [ "$1" == "--test" ]; then
-    REPO="testpypi"
-    REPO_URL="https://test.pypi.org/legacy/"
-    echo -e "${YELLOW}Uploading to TestPyPI${NC}"
-else
-    REPO="pypi"
-    REPO_URL=""
-    echo -e "${YELLOW}Uploading to PyPI${NC}"
-fi
-
-# Clean previous builds
-echo -e "${GREEN}Cleaning previous builds...${NC}"
+echo "[2/5] Cleaning old builds..."
 rm -rf dist/ build/ *.egg-info chou.egg-info
 
-# Build the package
-echo -e "${GREEN}Building package...${NC}"
-python3 -m pip install --upgrade build twine -q
-python3 -m build
+echo "[3/5] Installing build tools..."
+"$PYTHON" -m pip install --upgrade build twine -q
 
-# Check the distribution
-echo -e "${GREEN}Checking distribution...${NC}"
-python3 -m twine check dist/*
+echo "[4/5] Building package..."
+"$PYTHON" -m build
+"$PYTHON" -m twine check dist/*
 
-# Upload to PyPI
-echo -e "${GREEN}Uploading to ${REPO}...${NC}"
-if [ "$REPO" == "testpypi" ]; then
-    python3 -m twine upload --repository testpypi dist/*
-else
-    python3 -m twine upload dist/*
-fi
+echo "[5/5] Uploading to PyPI..."
+"$PYTHON" -m twine upload dist/*
 
-echo -e "${GREEN}Done! Chou v${VERSION} uploaded to ${REPO}${NC}"
-echo -e "Install with: ${YELLOW}pip install chou${NC}"
+echo "=== Done! ==="
