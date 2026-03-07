@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-PYTHON="C:/Miniconda3/envs/dev/python.exe"
+PYTHON="${PYTHON:-python3}"
 VERSION_FILE="chou/__version__.py"
 
 echo "=== Chou PyPI Upload ==="
