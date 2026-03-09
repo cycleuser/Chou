@@ -3,7 +3,7 @@ Chou (瞅) - Academic Paper PDF Renaming Tool
 Version information - single source of truth
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __app_name__ = "chou"
 __app_name_cn__ = "瞅"
 __author__ = "cycleuser"
