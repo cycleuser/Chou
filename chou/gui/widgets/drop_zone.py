@@ -6,13 +6,12 @@ from pathlib import Path
 from typing import List
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QPen, QFont
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QLabel, QFrame
 
 
-class DropZone(QWidget):
+class DropZone(QLabel):
     """
-    Widget that accepts drag-and-drop PDF files and folders.
+    Label widget that accepts drag-and-drop PDF files and folders.
     Emits files_dropped signal with list of PDF paths.
     """
 
@@ -21,23 +20,27 @@ class DropZone(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
-        self.setMinimumHeight(120)
-        self._hovering = False
+        self.setMinimumHeight(80)
+        self.setAlignment(Qt.AlignCenter)
+        self.setWordWrap(True)
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setText(
+            "Drag & Drop PDF files or folders here\n"
+            "or use the toolbar buttons to add files"
+        )
+        self.setStyleSheet(
+            "QLabel { border: 2px dashed palette(mid); "
+            "border-radius: 8px; padding: 16px; }"
+        )
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            self._hovering = True
-            self.update()
 
     def dragLeaveEvent(self, event):
-        self._hovering = False
-        self.update()
+        pass
 
     def dropEvent(self, event):
-        self._hovering = False
-        self.update()
-
         pdf_paths: List[Path] = []
         for url in event.mimeData().urls():
             path = Path(url.toLocalFile())
@@ -48,32 +51,3 @@ class DropZone(QWidget):
 
         if pdf_paths:
             self.files_dropped.emit(pdf_paths)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        rect = self.rect().adjusted(10, 10, -10, -10)
-
-        # Background
-        if self._hovering:
-            painter.fillRect(rect, QColor(200, 220, 255, 100))
-        else:
-            painter.fillRect(rect, QColor(245, 245, 245))
-
-        # Dashed border
-        pen = QPen(QColor(150, 150, 150) if not self._hovering else QColor(80, 120, 200))
-        pen.setStyle(Qt.DashLine)
-        pen.setWidth(2)
-        painter.setPen(pen)
-        painter.drawRoundedRect(rect, 8, 8)
-
-        # Text
-        font = QFont()
-        font.setPointSize(11)
-        painter.setFont(font)
-        painter.setPen(QColor(120, 120, 120) if not self._hovering else QColor(60, 90, 180))
-        painter.drawText(rect, Qt.AlignCenter,
-                         "Drag & Drop PDF files or folders here\n"
-                         "or use the toolbar buttons to add files")
-        painter.end()

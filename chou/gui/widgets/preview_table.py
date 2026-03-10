@@ -41,10 +41,11 @@ class PreviewTable(QTableView):
     def apply_column_widths(self):
         """Set sensible default column widths after model is attached"""
         h = self.horizontalHeader()
-        if self.model() and self.model().columnCount() >= 6:
+        if self.model() and self.model().columnCount() >= 7:
             h.resizeSection(0, 50)    # Status
-            h.resizeSection(1, 200)   # Original
-            h.resizeSection(2, 250)   # Title
-            h.resizeSection(3, 180)   # Authors
-            h.resizeSection(4, 55)    # Year
-            # col 5 (New Filename) stretches
+            h.resizeSection(1, 180)   # Original
+            h.resizeSection(2, 220)   # Title
+            h.resizeSection(3, 150)   # Authors
+            h.resizeSection(4, 140)   # Journal
+            h.resizeSection(5, 55)    # Year
+            # col 6 (New Filename) stretches

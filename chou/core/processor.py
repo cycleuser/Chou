@@ -34,6 +34,11 @@ class PaperProcessor:
         fallback_year: int = DEFAULT_YEAR,
         ocr_engine: Optional[str] = None,
         device: Optional[str] = None,
+        abbreviate_titles: bool = False,
+        max_title_length: int = 50,
+        include_journal: bool = False,
+        abbreviate_journal: bool = False,
+        max_journal_length: int = 30,
     ):
         """
         Initialize processor with configuration.
@@ -44,12 +49,22 @@ class PaperProcessor:
             fallback_year: Year to use if extraction fails
             ocr_engine: OCR engine name (None = auto-detect, "none" = disable)
             device: Device preference for OCR: "cpu", "gpu", or None (auto: try GPU, fall back to CPU)
+            abbreviate_titles: Whether to abbreviate long titles
+            max_title_length: Maximum title length before abbreviation
+            include_journal: Whether to include journal name in filename
+            abbreviate_journal: Whether to abbreviate long journal names
+            max_journal_length: Maximum journal name length before abbreviation
         """
         self.author_format = author_format
         self.n_authors = n_authors
         self.fallback_year = fallback_year
         self.ocr_engine = ocr_engine
         self.device = device
+        self.abbreviate_titles = abbreviate_titles
+        self.max_title_length = max_title_length
+        self.include_journal = include_journal
+        self.abbreviate_journal = abbreviate_journal
+        self.max_journal_length = max_journal_length
     
     def process_single(self, pdf_path: Path) -> PaperInfo:
         """
@@ -65,15 +80,18 @@ class PaperProcessor:
         
         try:
             # Try structured extraction first
-            title, authors, year = self._parse_paper_structured(str(pdf_path))
+            title, authors, year, journal = self._parse_paper_structured(str(pdf_path))
             
             # Fallback if structured extraction failed
             if not title or not authors:
-                title, authors, year = self._parse_paper_fallback(str(pdf_path))
+                title, authors, year, journal_fb = self._parse_paper_fallback(str(pdf_path))
+                if not journal:
+                    journal = journal_fb
             
             paper.title = title
             paper.authors = authors
             paper.year = year if year else self.fallback_year
+            paper.journal = journal
             
             # Validate extraction
             if not paper.title or not is_valid_authors_list(paper.authors):
@@ -87,7 +105,13 @@ class PaperProcessor:
                 paper.authors,
                 paper.year,
                 self.author_format,
-                self.n_authors
+                self.n_authors,
+                abbreviate_titles=self.abbreviate_titles,
+                max_title_length=self.max_title_length,
+                include_journal=self.include_journal,
+                journal=paper.journal,
+                abbreviate_journal=self.abbreviate_journal,
+                max_journal_length=self.max_journal_length,
             )
             paper.status = "success"
             
@@ -184,7 +208,13 @@ class PaperProcessor:
                 paper.authors,
                 paper.year,
                 self.author_format,
-                self.n_authors
+                self.n_authors,
+                abbreviate_titles=self.abbreviate_titles,
+                max_title_length=self.max_title_length,
+                include_journal=self.include_journal,
+                journal=paper.journal,
+                abbreviate_journal=self.abbreviate_journal,
+                max_journal_length=self.max_journal_length,
             )
             paper.status = "success"
         return paper
@@ -194,12 +224,12 @@ class PaperProcessor:
         Parse paper using font-based structured extraction.
         
         Returns:
-            Tuple of (title, authors, year)
+            Tuple of (title, authors, year, journal)
         """
         blocks = extract_text_blocks_with_font(pdf_path)
         
         if not blocks:
-            return None, [], None
+            return None, [], None, None
         
         # Get text for year extraction
         first_page_text = ' '.join([b["text"] for b in blocks])
@@ -227,6 +257,9 @@ class PaperProcessor:
         if header_zone_y > 0:
             header_zone_y += 30  # margin below last journal header block
         
+        # Extract journal name from header zone blocks
+        journal = self._extract_journal_from_blocks(blocks, header_zone_y)
+        
         # Filter header/footer content
         content_blocks = []
         for block in blocks:
@@ -244,7 +277,7 @@ class PaperProcessor:
             content_blocks.append(block)
         
         if not content_blocks:
-            return None, [], year
+            return None, [], year, journal
         
         # Sort by font size to find title
         sorted_by_font = sorted(content_blocks, key=lambda x: x["font_size"], reverse=True)
@@ -295,19 +328,19 @@ class PaperProcessor:
         
         authors = parse_all_authors(authors_text) if authors_text else []
         
-        return title, authors, year
+        return title, authors, year, journal
     
     def _parse_paper_fallback(self, pdf_path: str):
         """
         Fallback parsing using simple text extraction.
         
         Returns:
-            Tuple of (title, authors, year)
+            Tuple of (title, authors, year, journal)
         """
         text = extract_first_page_text(pdf_path, ocr_engine=self.ocr_engine, device=self.device)
         
         if not text:
-            return None, [], None
+            return None, [], None, None
         
         # Strip HTML tags from OCR output (Surya produces <sup>, <b>, <br> etc.)
         text = self._strip_ocr_html(text)
@@ -328,6 +361,9 @@ class PaperProcessor:
             return result
         
         lines = [l.strip() for l in text.split('\n') if l.strip()]
+        
+        # Extract journal name from early lines before filtering
+        journal = self._extract_journal_from_lines(lines)
         
         # Extended header patterns for journal articles
         extended_patterns = HEADER_PATTERNS + [
@@ -457,8 +493,135 @@ class PaperProcessor:
                 if authors:
                     break
         
-        return title, authors, year
+        return title, authors, year, journal
     
+    @staticmethod
+    def _extract_journal_from_blocks(blocks, header_zone_y) -> Optional[str]:
+        """
+        Extract journal name from blocks within the header zone of a PDF page.
+        
+        Looks at blocks above the header_zone_y threshold and filters out
+        publisher names, URLs, and other non-journal text.
+        
+        Returns:
+            Journal name string or None
+        """
+        if header_zone_y <= 0:
+            return None
+        
+        # Patterns to skip (publishers, URLs, generic labels, institutions)
+        skip_patterns = [
+            r'ScienceDirect', r'Elsevier', r'Springer', r'Wiley',
+            r'Taylor\s*&\s*Francis', r'IEEE', r'ACM',
+            r'journal\s+homepage', r'Contents\s+lists?\s+available',
+            r'HOSTED\s+BY', r'www\.', r'https?://',
+            r'Check\s+for', r'updates?',
+            r'Available\s+online', r'Accepted\s+\d',
+            r'Received\s+\d', r'Published\s+\d',
+            r'^\s*Research\s+(Paper|Article)\s*$',
+            r'^\s*(Review|Original|Research)\s+(Paper|Article)\s*$',
+            r'^\s*(Short|Brief)\s+(Communication|Report)\s*$',
+            r'ARTICLE\s+INFO', r'Keywords?\s*:',
+            r'^\s*\d+\s*$',  # bare numbers
+            r'^\s*$',
+            # Institution/affiliation patterns
+            r'\bUniversity\b', r'\bCollege\b', r'\bInstitute\b',
+            r'\bSchool\s+of\b', r'\bDepartment\b', r'\bFaculty\b',
+            r'\bLaboratory\b', r'\bCenter\b', r'\bCentre\b',
+            r'\b大学\b', r'\b学院\b', r'\b研究所\b', r'\b实验室\b',
+        ]
+        
+        candidates = []
+        for block in blocks:
+            if block["y"] > header_zone_y:
+                continue
+            text = block["text"].strip()
+            if len(text) < 3:
+                continue
+            # Skip blocks matching publisher/URL/label patterns
+            if any(re.search(pat, text, re.IGNORECASE) for pat in skip_patterns):
+                continue
+            # Skip blocks that are all digits or very short single words
+            if re.match(r'^[\d\s.]+$', text):
+                continue
+            candidates.append(text)
+        
+        if not candidates:
+            return None
+        
+        # Pick the best candidate: prefer longer, more journal-like text
+        best = None
+        for c in candidates:
+            # Clean trailing volume/issue/page info
+            # Matches patterns like: "10 (2019) 1437-1447", "10 (2019) 1437e1447"
+            cleaned = re.sub(r'\s*\d+\s*\(\d{4}\)\s*\d+[-–eE]?\d*\s*$', '', c).strip()
+            cleaned = re.sub(r'\s*Volume\s+\d+.*$', '', cleaned, flags=re.IGNORECASE).strip()
+            cleaned = re.sub(r'\s*Vol\.\s*\d+.*$', '', cleaned, flags=re.IGNORECASE).strip()
+            # Clean trailing bare volume numbers: "Journal Name 123"
+            cleaned = re.sub(r'\s+\d{1,4}\s*$', '', cleaned).strip()
+            if len(cleaned) < 3:
+                continue
+            if best is None or len(cleaned) > len(best):
+                best = cleaned
+        
+        return best
+    
+    @staticmethod
+    def _extract_journal_from_lines(lines) -> Optional[str]:
+        """
+        Extract journal name from the first few lines of plain text.
+        
+        Looks for journal-like patterns in the header lines of a paper.
+        
+        Returns:
+            Journal name string or None
+        """
+        # Patterns that indicate a line contains a journal name
+        journal_indicators = [
+            r'Journal\s+of\b', r'Transactions\s+on\b',
+            r'Proceedings\s+of\b', r'Annals\s+of\b',
+            r'Reviews?\s+of\b', r'Letters?\s+in\b',
+            r'Advances\s+in\b', r'Communications\s+in\b',
+            r'Archives?\s+of\b', r'Bulletin\s+of\b',
+        ]
+        # Chinese journal indicators
+        cn_journal_indicators = [
+            r'学报$', r'杂志$', r'期刊$', r'通报$', r'研究$',
+            r'科学$', r'工程$', r'技术$', r'地质$', r'地球$',
+        ]
+        
+        # Only scan first 10 lines (journal name is near the top)
+        for line in lines[:10]:
+            line = line.strip()
+            if len(line) < 3 or len(line) > 120:
+                continue
+            # Skip lines that are clearly not journal names
+            if re.search(r'https?://', line) or re.search(r'www\.', line):
+                continue
+            if re.search(r'@', line):
+                continue
+            
+            # Check English journal indicators
+            for pat in journal_indicators:
+                if re.search(pat, line, re.IGNORECASE):
+                    # Clean volume/page info from end
+                    cleaned = re.sub(r'\s*\d+\s*\(\d{4}\).*$', '', line).strip()
+                    cleaned = re.sub(r'\s*,\s*Volume\s+\d+.*$', '', cleaned, flags=re.IGNORECASE).strip()
+                    if len(cleaned) >= 5:
+                        return cleaned
+            
+            # Check Chinese journal indicators
+            for pat in cn_journal_indicators:
+                if re.search(pat, line):
+                    # Clean trailing issue/volume info
+                    cleaned = re.sub(r'\s*第?\s*\d+\s*卷.*$', '', line).strip()
+                    cleaned = re.sub(r'\s*\d{4}\s*年.*$', '', cleaned).strip()
+                    cleaned = re.sub(r'\s*,\s*\d+.*$', '', cleaned).strip()
+                    if len(cleaned) >= 2:
+                        return cleaned
+        
+        return None
+
     @staticmethod
     def _strip_ocr_html(text: str) -> str:
         """Strip HTML tags commonly produced by OCR engines like Surya."""
@@ -479,7 +642,7 @@ class PaperProcessor:
         Try to parse text as a Chinese thesis/dissertation with labeled fields.
         
         Returns:
-            Tuple of (title, authors, year) if successful, None otherwise
+            Tuple of (title, authors, year, journal) if successful, None otherwise
         """
         # Look for explicit title label: 论文题目, 题目, 题 目
         title_match = re.search(r'(?:论文题目|题\s*目)[：:\s]*(.+)', text)
@@ -503,4 +666,4 @@ class PaperProcessor:
                 for name in cn_names:
                     authors.append(Author(full_name=name, surname=name[0]))
         
-        return title, authors, year
+        return title, authors, year, None

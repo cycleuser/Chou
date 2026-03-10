@@ -51,6 +51,7 @@ class PaperInfo:
     title: Optional[str] = None
     authors: List[Author] = field(default_factory=list)
     year: Optional[int] = None
+    journal: Optional[str] = None
     new_filename: Optional[str] = None
     status: str = "pending"  # pending, success, error, skip
     error_message: Optional[str] = None

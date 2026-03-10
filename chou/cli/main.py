@@ -11,7 +11,7 @@ from pathlib import Path
 from ..__version__ import __version__, __app_name__, __app_name_cn__
 from ..core.models import AuthorFormat
 from ..core.processor import PaperProcessor
-from ..core.ocr_extractor import get_available_engines
+from ..core.ocr_extractor import get_available_engines_safe
 
 
 def setup_logging(log_file: str = None, verbose: bool = False):
@@ -123,8 +123,42 @@ def main():
         help='Suppress non-essential output'
     )
     
+    # Title abbreviation options
+    parser.add_argument(
+        '--abbreviate-titles',
+        action='store_true',
+        help='Abbreviate long paper titles in filenames'
+    )
+    
+    parser.add_argument(
+        '--max-title-length',
+        type=int,
+        default=50,
+        help='Maximum length for abbreviated titles (default: 50)'
+    )
+    
+    # Journal name options
+    parser.add_argument(
+        '--include-journal',
+        action='store_true',
+        help='Include journal/conference name in filenames'
+    )
+    
+    parser.add_argument(
+        '--abbreviate-journal',
+        action='store_true',
+        help='Abbreviate long journal names in filenames'
+    )
+    
+    parser.add_argument(
+        '--max-journal-length',
+        type=int,
+        default=30,
+        help='Maximum length for abbreviated journal names (default: 30)'
+    )
+    
     # OCR options
-    ocr_engines = get_available_engines()
+    ocr_engines = get_available_engines_safe()
     parser.add_argument(
         '--ocr-engine',
         type=str,
@@ -206,7 +240,7 @@ def main():
     # Determine OCR engine
     ocr_engine_name = "none" if args.no_ocr else args.ocr_engine
     if ocr_engine_name != "none":
-        available = get_available_engines()
+        available = get_available_engines_safe()
         if available:
             engine_display = ocr_engine_name if ocr_engine_name else available[0]
             logger.info(f"OCR engine: {engine_display} (available: {', '.join(available)})")
@@ -232,6 +266,11 @@ def main():
         n_authors=args.num_authors,
         ocr_engine=ocr_engine_name,
         device=device,
+        abbreviate_titles=args.abbreviate_titles,
+        max_title_length=args.max_title_length,
+        include_journal=args.include_journal,
+        abbreviate_journal=args.abbreviate_journal,
+        max_journal_length=args.max_journal_length,
     )
     
     papers = processor.process_directory(args.dir, recursive=recursive)

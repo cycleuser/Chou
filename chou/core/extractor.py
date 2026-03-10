@@ -10,7 +10,7 @@ try:
 except ImportError:
     fitz = None
 
-from .ocr_extractor import extract_text_with_ocr, get_available_engines, OCR_MIN_TEXT_LENGTH
+from .ocr_extractor import extract_text_with_ocr, OCR_MIN_TEXT_LENGTH
 
 logger = logging.getLogger(__name__)
 

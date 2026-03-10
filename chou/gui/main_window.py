@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QToolBar, QStatusBar, QFileDialog, QMessageBox,
     QComboBox, QSpinBox, QCheckBox, QLabel, QSplitter,
-    QListWidget, QListWidgetItem, QGroupBox, QFormLayout,
+    QListWidget, QListWidgetItem, QGroupBox,
     QProgressBar, QApplication,
 )
 
@@ -223,38 +223,82 @@ class MainWindow(QMainWindow):
 
     def _create_settings_box(self) -> QGroupBox:
         box = QGroupBox("Settings")
-        layout = QFormLayout(box)
+        layout = QVBoxLayout(box)
         layout.setContentsMargins(8, 4, 8, 4)
 
-        row = QHBoxLayout()
+        # Row 1: Format, N, Recursive
+        row1 = QHBoxLayout()
 
         # Format combo
         self._combo_format = QComboBox()
         for fmt in AuthorFormat:
             self._combo_format.addItem(fmt.value, fmt)
         self._combo_format.currentIndexChanged.connect(self._on_settings_changed)
-        row.addWidget(QLabel("Format:"))
-        row.addWidget(self._combo_format)
+        row1.addWidget(QLabel("Format:"))
+        row1.addWidget(self._combo_format)
 
-        row.addSpacing(12)
+        row1.addSpacing(12)
 
         # N authors
         self._spin_n = QSpinBox()
         self._spin_n.setRange(1, 20)
         self._spin_n.setValue(3)
         self._spin_n.valueChanged.connect(self._on_settings_changed)
-        row.addWidget(QLabel("N:"))
-        row.addWidget(self._spin_n)
+        row1.addWidget(QLabel("N:"))
+        row1.addWidget(self._spin_n)
 
-        row.addSpacing(12)
+        row1.addSpacing(12)
 
         # Recursive
         self._chk_recursive = QCheckBox("Recursive")
-        row.addWidget(self._chk_recursive)
+        row1.addWidget(self._chk_recursive)
 
-        row.addStretch()
+        row1.addStretch()
+        layout.addLayout(row1)
 
-        layout.addRow(row)
+        # Row 2: Abbreviation and journal controls
+        row2 = QHBoxLayout()
+
+        # Abbreviate titles
+        self._chk_abbreviate_titles = QCheckBox("Abbreviate Titles")
+        self._chk_abbreviate_titles.stateChanged.connect(self._on_settings_changed)
+        row2.addWidget(self._chk_abbreviate_titles)
+
+        self._spin_max_title_length = QSpinBox()
+        self._spin_max_title_length.setRange(20, 200)
+        self._spin_max_title_length.setValue(50)
+        self._spin_max_title_length.setEnabled(False)
+        self._spin_max_title_length.valueChanged.connect(self._on_settings_changed)
+        self._chk_abbreviate_titles.toggled.connect(self._spin_max_title_length.setEnabled)
+        row2.addWidget(QLabel("Max:"))
+        row2.addWidget(self._spin_max_title_length)
+
+        row2.addSpacing(16)
+
+        # Include journal
+        self._chk_include_journal = QCheckBox("Include Journal")
+        self._chk_include_journal.stateChanged.connect(self._on_settings_changed)
+        row2.addWidget(self._chk_include_journal)
+
+        row2.addSpacing(16)
+
+        # Abbreviate journal
+        self._chk_abbreviate_journal = QCheckBox("Abbreviate Journal")
+        self._chk_abbreviate_journal.stateChanged.connect(self._on_settings_changed)
+        row2.addWidget(self._chk_abbreviate_journal)
+
+        self._spin_max_journal_length = QSpinBox()
+        self._spin_max_journal_length.setRange(10, 100)
+        self._spin_max_journal_length.setValue(30)
+        self._spin_max_journal_length.setEnabled(False)
+        self._spin_max_journal_length.valueChanged.connect(self._on_settings_changed)
+        self._chk_abbreviate_journal.toggled.connect(self._spin_max_journal_length.setEnabled)
+        row2.addWidget(QLabel("Max:"))
+        row2.addWidget(self._spin_max_journal_length)
+
+        row2.addStretch()
+        layout.addLayout(row2)
+
         return box
 
     # ---- History panel -----------------------------------------------------
@@ -379,13 +423,14 @@ class MainWindow(QMainWindow):
         import csv
         with open(path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(["Original", "New", "Title", "Authors", "Year", "Status", "Error"])
+            writer.writerow(["Original", "New", "Title", "Authors", "Journal", "Year", "Status", "Error"])
             for p in self._model.papers:
                 writer.writerow([
                     p.original_filename,
                     p.new_filename or "",
                     p.title or "",
                     ", ".join(a.full_name for a in p.authors),
+                    p.journal or "",
                     p.year or "",
                     p.status,
                     p.error_message or "",
@@ -405,7 +450,15 @@ class MainWindow(QMainWindow):
     def _rebuild_processor(self):
         fmt = self._combo_format.currentData()
         n = self._spin_n.value()
-        self._processor = PaperProcessor(author_format=fmt, n_authors=n)
+        self._processor = PaperProcessor(
+            author_format=fmt,
+            n_authors=n,
+            abbreviate_titles=self._chk_abbreviate_titles.isChecked(),
+            max_title_length=self._spin_max_title_length.value(),
+            include_journal=self._chk_include_journal.isChecked(),
+            abbreviate_journal=self._chk_abbreviate_journal.isChecked(),
+            max_journal_length=self._spin_max_journal_length.value(),
+        )
         self._model.set_processor(self._processor)
 
     # ---- History -----------------------------------------------------------

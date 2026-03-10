@@ -42,6 +42,11 @@ def rename_papers(
     dry_run: bool = True,
     ocr_engine: str | None = None,
     device: str | None = None,
+    abbreviate_titles: bool = False,
+    max_title_length: int = 50,
+    include_journal: bool = False,
+    abbreviate_journal: bool = False,
+    max_journal_length: int = 30,
 ) -> ToolResult:
     """Process and rename academic PDF files in a directory.
 
@@ -62,6 +67,16 @@ def rename_papers(
         OCR engine name, or None for auto-detect.
     device : str or None
         "cpu", "gpu", or None for auto.
+    abbreviate_titles: bool
+        Whether to abbreviate long titles in filenames.
+    max_title_length : int
+        Maximum length for abbreviated titles.
+    include_journal : bool
+        Whether to include journal/conference name in filenames.
+    abbreviate_journal : bool
+        Whether to abbreviate long journal names in filenames.
+    max_journal_length : int
+        Maximum length for abbreviated journal names.
 
     Returns
     -------
@@ -87,6 +102,11 @@ def rename_papers(
             n_authors=n_authors,
             ocr_engine=ocr_engine or None,
             device=device,
+            abbreviate_titles=abbreviate_titles,
+            max_title_length=max_title_length,
+            include_journal=include_journal,
+            abbreviate_journal=abbreviate_journal,
+            max_journal_length=max_journal_length,
         )
 
         papers = processor.process_directory(directory, recursive=recursive)
@@ -102,6 +122,7 @@ def rename_papers(
                 "title": p.title or None,
                 "authors": [a.surname for a in p.authors] if p.authors else [],
                 "year": p.year,
+                "journal": p.journal or None,
                 "status": p.status,
                 "error": p.error_message or None,
             })

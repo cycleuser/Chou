@@ -28,6 +28,8 @@ ENGINE_PRIORITY = ["surya", "paddleocr", "rapidocr", "easyocr", "tesseract"]
 
 # Module-level engine cache: (engine_name, device) -> instance
 _engine_cache: dict = {}
+# Engines that failed initialization — never retry them in this process
+_failed_engines: set = set()
 
 
 def _is_cuda_oom(exc: Exception) -> bool:
@@ -190,7 +192,7 @@ class PaddleOcrEngine(OcrEngine):
         try:
             from paddleocr import PaddleOCR  # noqa
             return True
-        except ImportError:
+        except Exception:
             return False
 
     def ocr_image(self, image_bytes: bytes) -> str:
@@ -349,6 +351,36 @@ def get_available_engines() -> List[str]:
     return available
 
 
+# Package name mapping for safe spec-based detection
+_ENGINE_PACKAGE_SPECS = {
+    "surya": "surya",
+    "paddleocr": "paddleocr",
+    "rapidocr": "rapidocr_onnxruntime",
+    "easyocr": "easyocr",
+    "tesseract": "pytesseract",
+}
+
+
+def get_available_engines_safe() -> List[str]:
+    """Return list of likely-installed OCR engine names without importing them.
+
+    Uses importlib.util.find_spec() to check if the packages are installed,
+    which avoids triggering module-level side effects (e.g. PaddleX/PDX
+    initialization) that make subsequent real imports fail.
+
+    This is suitable for CLI help text and informational logging.
+    For actual engine instantiation, use get_ocr_engine() instead.
+    """
+    import importlib.util
+
+    available = []
+    for name in ENGINE_PRIORITY:
+        spec_name = _ENGINE_PACKAGE_SPECS.get(name)
+        if spec_name and importlib.util.find_spec(spec_name) is not None:
+            available.append(name)
+    return available
+
+
 def get_ocr_engine(engine_name: Optional[str] = None, device: Optional[str] = None) -> Optional[OcrEngine]:
     """
     Return an OcrEngine instance.
@@ -364,6 +396,8 @@ def get_ocr_engine(engine_name: Optional[str] = None, device: Optional[str] = No
     cache_key = (engine_name, device)
 
     if engine_name:
+        if engine_name in _failed_engines:
+            return None
         if cache_key in _engine_cache:
             return _engine_cache[cache_key]
         cls = _ENGINE_CLASSES.get(engine_name)
@@ -374,12 +408,15 @@ def get_ocr_engine(engine_name: Optional[str] = None, device: Optional[str] = No
                 return instance
             except Exception as e:
                 logger.warning(f"Failed to initialize {engine_name}: {e}")
+                _failed_engines.add(engine_name)
                 return None
         logger.warning(f"OCR engine '{engine_name}' is not available")
         return None
 
     # Auto-detect: try each engine in priority order
     for name in ENGINE_PRIORITY:
+        if name in _failed_engines:
+            continue
         key = (name, device)
         if key in _engine_cache:
             return _engine_cache[key]
@@ -391,6 +428,7 @@ def get_ocr_engine(engine_name: Optional[str] = None, device: Optional[str] = No
                 return instance
             except Exception as e:
                 logger.warning(f"Failed to initialize {name}: {e}")
+                _failed_engines.add(name)
                 continue
 
     return None
@@ -399,6 +437,7 @@ def get_ocr_engine(engine_name: Optional[str] = None, device: Optional[str] = No
 def clear_engine_cache():
     """Clear all cached engine instances. Useful for testing."""
     _engine_cache.clear()
+    _failed_engines.clear()
 
 
 # ---------------------------------------------------------------------------

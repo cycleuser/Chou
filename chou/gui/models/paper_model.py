@@ -11,13 +11,14 @@ from ...core.models import PaperInfo, Author, AuthorFormat
 from ...core.processor import PaperProcessor
 from ...core.author_parser import parse_all_authors
 
-COLUMNS = ["Status", "Original Filename", "Title", "Authors", "Year", "New Filename"]
+COLUMNS = ["Status", "Original Filename", "Title", "Authors", "Journal", "Year", "New Filename"]
 COL_STATUS = 0
 COL_ORIGINAL = 1
 COL_TITLE = 2
 COL_AUTHORS = 3
-COL_YEAR = 4
-COL_NEW_FILENAME = 5
+COL_JOURNAL = 4
+COL_YEAR = 5
+COL_NEW_FILENAME = 6
 
 
 class PaperTableModel(QAbstractTableModel):
@@ -71,6 +72,8 @@ class PaperTableModel(QAbstractTableModel):
                 return paper.title or ""
             elif col == COL_AUTHORS:
                 return ", ".join(a.full_name for a in paper.authors)
+            elif col == COL_JOURNAL:
+                return paper.journal or ""
             elif col == COL_YEAR:
                 return str(paper.year) if paper.year else ""
             elif col == COL_NEW_FILENAME:
@@ -81,6 +84,8 @@ class PaperTableModel(QAbstractTableModel):
                 return paper.title or ""
             elif col == COL_AUTHORS:
                 return ", ".join(a.full_name for a in paper.authors)
+            elif col == COL_JOURNAL:
+                return paper.journal or ""
             elif col == COL_YEAR:
                 return str(paper.year) if paper.year else ""
 
@@ -109,7 +114,7 @@ class PaperTableModel(QAbstractTableModel):
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         base_flags = super().flags(index)
         col = index.column()
-        if col in (COL_TITLE, COL_AUTHORS, COL_YEAR):
+        if col in (COL_TITLE, COL_AUTHORS, COL_JOURNAL, COL_YEAR):
             return base_flags | Qt.ItemIsEditable
         return base_flags
 
@@ -127,6 +132,8 @@ class PaperTableModel(QAbstractTableModel):
                 paper.authors = parse_all_authors(value.strip())
             else:
                 paper.authors = []
+        elif col == COL_JOURNAL:
+            paper.journal = value.strip() if value else None
         elif col == COL_YEAR:
             try:
                 paper.year = int(value) if value else None
