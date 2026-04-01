@@ -1,5 +1,10 @@
 """
 Main paper processing orchestrator
+
+Improved Chinese paper support:
+- Better detection of Chinese thesis/dissertation format
+- Enhanced Chinese author name extraction
+- Force OCR when Chinese text extraction is corrupted
 """
 
 import re
@@ -17,6 +22,14 @@ from .year_parser import extract_year_from_text
 from .author_parser import parse_all_authors, is_valid_authors_list
 from .filename_gen import generate_citation_filename
 from ..utils.constants import HEADER_PATTERNS, DEFAULT_YEAR
+from ..utils.chinese_utils import (
+    is_chinese_thesis,
+    extract_chinese_thesis_fields,
+    extract_chinese_names,
+    clean_chinese_title,
+    has_chinese_content,
+    count_cjk_chars,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -362,7 +375,12 @@ class PaperProcessor:
         
         lines = [l.strip() for l in text.split('\n') if l.strip()]
         
-        # Extract journal name from early lines before filtering
+        if has_chinese_content(text, min_chars=30):
+            if is_chinese_thesis(text):
+                result = self._try_parse_chinese_thesis(text, year)
+                if result:
+                    return result
+        
         journal = self._extract_journal_from_lines(lines)
         
         # Extended header patterns for journal articles
@@ -402,53 +420,71 @@ class PaperProcessor:
         # Score each of the first 10 lines (OCR text may have many header lines)
         for i, line in enumerate(content_lines[:10]):
             score = len(line)
-            # Position penalty: titles appear early (gentler for OCR text)
             score -= i * 10
-            # Penalize lines with colons (likely metadata) — but mild for long lines
-            # or lines where colon appears after a short prefix (subtitle pattern)
+            
+            cjk_count = count_cjk_chars(line)
+            cjk_ratio = cjk_count / max(len(line), 1)
+            
+            if cjk_count > 10:
+                score += 30
+            
+            if cjk_ratio > 0.6:
+                score += 20
+            
+            if cjk_count > 5 and len(line) > 15:
+                score += 25
+            
             if ':' in line or '\uff1a' in line:
                 colon_pos = line.find(':')
                 if colon_pos < 0:
                     colon_pos = line.find('\uff1a')
                 rest_after_colon = line[colon_pos+1:].strip() if colon_pos >= 0 else ''
                 if len(rest_after_colon) > 15:
-                    # Colon with long content after — likely a title with subtitle
                     score -= 5
                 elif len(line) < 40:
                     score -= 50
                 else:
                     score -= 15
-            # Penalize lines that are mostly digits
+            
             digit_ratio = sum(1 for c in line if c.isdigit()) / max(len(line), 1)
             if digit_ratio > 0.3:
                 score -= 80
-            # Penalize very short lines
-            if len(line) < 20:
+            
+            if len(line) < 20 and cjk_count < 5:
                 score -= 30
-            # Penalize lines with parenthesized year/volume info
+            
             if re.search(r'\(\d{4}\)', line):
                 score -= 40
-            # Penalize lines with institutional/address words
+            
             address_words = ['department', 'university', 'college', 'school', 'institute',
                            'street', 'avenue', 'road', 'laboratory', 'lab ', 'faculty']
+            address_words_cn = ['大学', '学院', '研究所', '实验室', '学校', '系', '部']
             if any(kw in line.lower() for kw in address_words):
                 score -= 100
-            # Penalize lines with commas and asterisks (likely author lines)
+            if any(kw in line for kw in address_words_cn):
+                score -= 100
+            
             if ('*' in line or '∗' in line) and ',' in line:
                 score -= 60
-            # Penalize all-uppercase lines (likely journal name or section header)
-            if line == line.upper() and len(line) > 5:
+            
+            if line == line.upper() and len(line) > 5 and cjk_count < 5:
                 score -= 60
-            # Penalize journal-name-like lines (short, title case, no verbs)
+            
             if len(line) < 30 and re.match(r'^[A-Z][a-z]+(\s+[A-Z][a-z]+){0,3}$', line):
                 score -= 40
-            # Bonus for lines that look like academic titles
+            
             lowercase_ratio = sum(1 for c in line if c.islower()) / max(len(line), 1)
             if lowercase_ratio > 0.5 and len(line) > 30:
                 score += 20
-            # Bonus for CJK-heavy lines that are long (likely Chinese titles)
-            cjk_count = sum(1 for c in line if '\u4e00' <= c <= '\u9fff')
-            if cjk_count > 5 and len(line) > 15:
+            
+            common_cn_non_title = ['摘要', '目录', '引言', '结论', '致谢', '参考文献',
+                                   '关键词', '附录', '前言', '概述', '综述', '绪论',
+                                   '第一章', '第二章', '第三章', '第四章', '第五章',
+                                   '研究生', '博士生', '硕士生', '导师', '指导教师']
+            if any(kw in line for kw in common_cn_non_title):
+                score -= 50
+            
+            if cjk_count > 8:
                 score += 15
             
             if score > best_score:
@@ -475,19 +511,35 @@ class PaperProcessor:
                     title = title + " " + next_line
                     title_idx += 1
         
-        # Find authors in lines after the title
         authors = []
+        is_chinese_paper = has_chinese_content(text, min_chars=20)
+        
         for line in content_lines[title_idx+1:title_idx+6]:
             if any(kw in line.lower() for kw in ['abstract', 'introduction', 'we ', 'this paper']):
                 break
-            if '\u6458' in line:  # 摘 (abstract in Chinese)
+            if '\u6458' in line:
                 break
-            if '\u5173\u952e\u8bcd' in line:  # 关键词 (keywords in Chinese)
+            if '\u5173\u952e\u8bcd' in line:
                 break
-            # Skip institution/affiliation lines
-            if any(kw in line.lower() for kw in ['department', 'university', 'college', 'school', 'institute']):
+            
+            address_words_cn = ['大学', '学院', '研究所', '实验室', '学校', '系', '部', '导师', '指导']
+            if any(kw in line for kw in address_words_cn):
                 continue
-            # Look for name-like patterns
+            
+            address_words = ['department', 'university', 'college', 'school', 'institute']
+            if any(kw in line.lower() for kw in address_words):
+                continue
+            
+            if is_chinese_paper:
+                cn_names = extract_chinese_names(line)
+                if cn_names:
+                    for name in cn_names[:5]:
+                        if len(name) >= 2 and len(name) <= 4:
+                            surname = name[0]
+                            authors.append(Author(full_name=name, surname=surname))
+                    if authors:
+                        break
+            
             if ',' in line or '\uff0c' in line or '*' in line or re.search(r'\b[A-Z]\.\w?\.\s*[A-Z]', line) or re.search(r'\b[A-Z][a-z]+ [A-Z][a-z]+\b', line):
                 authors = parse_all_authors(line)
                 if authors:
@@ -641,29 +693,66 @@ class PaperProcessor:
         """
         Try to parse text as a Chinese thesis/dissertation with labeled fields.
         
+        Uses comprehensive Chinese thesis field patterns including:
+        - 论文题目, 题目, 学位论文题目
+        - 作者姓名, 姓名, 研究生姓名
+        - 指导教师, 导师姓名
+        - etc.
+        
         Returns:
             Tuple of (title, authors, year, journal) if successful, None otherwise
         """
-        # Look for explicit title label: 论文题目, 题目, 题 目
-        title_match = re.search(r'(?:论文题目|题\s*目)[：:\s]*(.+)', text)
-        if not title_match:
+        if not is_chinese_thesis(text):
             return None
         
-        title = title_match.group(1).strip()
-        # Clean up: take just the first line if multi-line
-        title = re.split(r'\n', title)[0].strip()
+        fields = extract_chinese_thesis_fields(text)
+        
+        title = None
+        if 'title' in fields:
+            title = clean_chinese_title(fields['title'])
+        
         if not title:
+            title_match = re.search(r'(?:论文题目|题\s*目)[：:\s]*(.+?)(?:\n|$)', text)
+            if title_match:
+                title = clean_chinese_title(title_match.group(1).strip())
+        
+        if not title or len(title) < 2:
             return None
         
-        # Look for author label: 作者姓名, 作者, 姓名
-        author_match = re.search(r'(?:作者姓名|作\s*者)[：:\s]*(.+)', text)
         authors = []
-        if author_match:
-            author_str = author_match.group(1).strip().split('\n')[0].strip()
-            # Chinese names: 2-4 CJK characters
-            cn_names = re.findall(r'[\u4e00-\u9fff]{2,4}', author_str)
-            if cn_names:
+        if 'author' in fields:
+            author_str = fields['author']
+            cn_names = extract_chinese_names(author_str)
+            for name in cn_names[:5]:
+                if len(name) >= 2 and len(name) <= 4:
+                    surname = name[0] if len(name) >= 2 else name
+                    authors.append(Author(full_name=name, surname=surname))
+        
+        if not authors:
+            author_match = re.search(r'(?:作者姓名|作\s*者)[：:\s]*(.+?)(?:\n|$)', text)
+            if author_match:
+                author_str = author_match.group(1).strip().split('\n')[0].strip()
+                cn_names = re.findall(r'[\u4e00-\u9fff]{2,4}', author_str)
                 for name in cn_names:
-                    authors.append(Author(full_name=name, surname=name[0]))
+                    if len(name) >= 2:
+                        authors.append(Author(full_name=name, surname=name[0]))
+        
+        if not authors and 'advisor' in fields:
+            pass
+        
+        if not authors:
+            lines_after_title = []
+            title_pattern = re.escape(title[:10] if len(title) > 10 else title)
+            title_pos = text.find(title)
+            if title_pos >= 0:
+                remaining = text[title_pos + len(title):]
+                for line in remaining.split('\n')[:10]:
+                    line = line.strip()
+                    if line and not any(kw in line for kw in ['摘要', '关键词', '指导', '导师', '学校', '学院', '专业']):
+                        cn_names = extract_chinese_names(line)
+                        if cn_names:
+                            for name in cn_names[:3]:
+                                authors.append(Author(full_name=name, surname=name[0]))
+                            break
         
         return title, authors, year, None

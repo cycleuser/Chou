@@ -1,5 +1,10 @@
 """
 PDF text extraction functions using PyMuPDF, with optional OCR fallback.
+
+Improved Chinese text support:
+- Detects corrupted Chinese characters (mojibake)
+- Forces OCR when Chinese text extraction fails
+- Better handling of Chinese PDFs with encoding issues
 """
 
 from typing import Optional, List, Dict
@@ -11,6 +16,12 @@ except ImportError:
     fitz = None
 
 from .ocr_extractor import extract_text_with_ocr, OCR_MIN_TEXT_LENGTH
+from ..utils.chinese_utils import (
+    should_force_ocr_for_chinese,
+    is_chinese_text_valid,
+    count_cjk_chars,
+    has_chinese_content,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +34,8 @@ def check_pymupdf() -> bool:
 def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None, device: Optional[str] = None) -> Optional[str]:
     """
     Extract text from the first page of a PDF.
-    Falls back to OCR if native extraction yields too little text.
+    Falls back to OCR if native extraction yields too little text
+    or if Chinese text appears corrupted (mojibake).
     
     Args:
         pdf_path: Path to the PDF file
@@ -46,11 +58,35 @@ def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None, dev
         text = page.get_text()
         doc.close()
 
-        # OCR fallback for scanned / image-based PDFs
-        if len(text.strip()) < OCR_MIN_TEXT_LENGTH and ocr_engine != "none":
+        if ocr_engine == "none":
+            return text
+
+        cjk_count = count_cjk_chars(text)
+        is_chinese_doc = cjk_count > 10
+
+        needs_ocr = False
+        ocr_reason = ""
+
+        if len(text.strip()) < OCR_MIN_TEXT_LENGTH:
+            needs_ocr = True
+            ocr_reason = f"text_length={len(text.strip())} < {OCR_MIN_TEXT_LENGTH}"
+
+        if is_chinese_doc and should_force_ocr_for_chinese(text):
+            needs_ocr = True
+            is_valid, reason = is_chinese_text_valid(text)
+            ocr_reason = f"chinese_text_invalid: {reason}"
+
+        if needs_ocr:
+            logger.info(f"OCR fallback triggered for {pdf_path}: {ocr_reason}")
             ocr_text = extract_text_with_ocr(pdf_path, max_pages=1, engine_name=ocr_engine, device=device)
             if ocr_text and len(ocr_text.strip()) > len(text.strip()):
+                logger.info(f"OCR succeeded: {len(ocr_text.strip())} chars extracted (vs {len(text.strip())} from native)")
                 return ocr_text
+            elif ocr_text and is_chinese_doc:
+                ocr_cjk_count = count_cjk_chars(ocr_text)
+                if ocr_cjk_count > cjk_count:
+                    logger.info(f"OCR better for Chinese: {ocr_cjk_count} CJK chars (vs {cjk_count} from native)")
+                    return ocr_text
 
         return text
     except Exception as e:
@@ -61,7 +97,8 @@ def extract_first_page_text(pdf_path: str, ocr_engine: Optional[str] = None, dev
 def extract_multi_page_text(pdf_path: str, max_pages: int = 3, ocr_engine: Optional[str] = None, device: Optional[str] = None) -> Optional[str]:
     """
     Extract text from the first N pages of a PDF for year extraction.
-    Falls back to OCR if native extraction yields too little text.
+    Falls back to OCR if native extraction yields too little text
+    or if Chinese text appears corrupted (mojibake).
     
     Args:
         pdf_path: Path to the PDF file
@@ -91,11 +128,35 @@ def extract_multi_page_text(pdf_path: str, max_pages: int = 3, ocr_engine: Optio
         doc.close()
         combined = '\n'.join(texts)
 
-        # OCR fallback for scanned / image-based PDFs
-        if len(combined.strip()) < OCR_MIN_TEXT_LENGTH and ocr_engine != "none":
+        if ocr_engine == "none":
+            return combined
+
+        cjk_count = count_cjk_chars(combined)
+        is_chinese_doc = cjk_count > 20
+
+        needs_ocr = False
+        ocr_reason = ""
+
+        if len(combined.strip()) < OCR_MIN_TEXT_LENGTH:
+            needs_ocr = True
+            ocr_reason = f"text_length={len(combined.strip())} < {OCR_MIN_TEXT_LENGTH}"
+
+        if is_chinese_doc and should_force_ocr_for_chinese(combined):
+            needs_ocr = True
+            is_valid, reason = is_chinese_text_valid(combined)
+            ocr_reason = f"chinese_text_invalid: {reason}"
+
+        if needs_ocr:
+            logger.info(f"OCR fallback triggered for {pdf_path}: {ocr_reason}")
             ocr_text = extract_text_with_ocr(pdf_path, max_pages=max_pages, engine_name=ocr_engine, device=device)
             if ocr_text and len(ocr_text.strip()) > len(combined.strip()):
+                logger.info(f"OCR succeeded: {len(ocr_text.strip())} chars extracted")
                 return ocr_text
+            elif ocr_text and is_chinese_doc:
+                ocr_cjk_count = count_cjk_chars(ocr_text)
+                if ocr_cjk_count > cjk_count:
+                    logger.info(f"OCR better for Chinese: {ocr_cjk_count} CJK chars (vs {cjk_count} from native)")
+                    return ocr_text
 
         return combined
     except Exception as e:

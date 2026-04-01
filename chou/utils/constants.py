@@ -38,18 +38,21 @@ CHINESE_DIGIT_MAP = {
 
 # Special characters to remove from author names
 AUTHOR_SPECIAL_CHARS = [
-    '*', '∗', '⁎', '✱', '＊',  # asterisks
-    '†', '‡', '§', '¶', '∥',   # footnote markers
-    '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '⁰',  # superscript numbers
-    '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉', '₀',  # subscript numbers
-    '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨',  # circled numbers
-    '♠', '♣', '♦', '♥', '★', '☆',  # other markers
+    '*', '∗', '⁎', '✱', '＊',
+    '†', '‡', '§', '¶', '∥',
+    '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '⁰',
+    '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉', '₀',
+    '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨',
+    '♠', '♣', '♦', '♥', '★', '☆',
 ]
 
-# Invalid characters for filenames
+CHINESE_AUTHOR_SPECIAL_CHARS = [
+    '∗', '※', '☆', '★', '○', '●', '◎',
+    '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧',
+]
+
 INVALID_FILENAME_CHARS = '<>:"/\\|?*'
 
-# Maximum filename length
 MAX_FILENAME_LENGTH = 200
 
 # Header patterns to skip when parsing
