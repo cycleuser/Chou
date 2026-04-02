@@ -139,3 +139,52 @@ class TestGenerateCitationFilename:
         assert ":" not in fname
         assert "<" not in fname
         assert "?" not in fname
+    
+    def test_very_long_title_truncated(self, single_author):
+        very_long_title = "A" * 500
+        fname = generate_citation_filename(
+            very_long_title,
+            single_author,
+            2023,
+            AuthorFormat.FIRST_SURNAME,
+        )
+        assert len(fname) <= 200
+        assert fname.endswith(".pdf")
+        assert "Smith (2023)" in fname
+    
+    def test_multiple_authors_very_long_title(self, sample_authors):
+        very_long_title = "B" * 500
+        fname = generate_citation_filename(
+            very_long_title,
+            sample_authors,
+            2023,
+            AuthorFormat.FIRST_SURNAME,
+        )
+        assert len(fname) <= 200
+        assert fname.endswith(".pdf")
+        assert "et al." in fname
+        assert "(2023)" in fname
+    
+    def test_all_full_format_long_authors(self, many_authors):
+        title = "Research Paper Title"
+        fname = generate_citation_filename(
+            title,
+            many_authors,
+            2023,
+            AuthorFormat.ALL_FULL,
+        )
+        assert len(fname) <= 200
+        assert fname.endswith(".pdf")
+    
+    def test_journal_included_long_filename(self, single_author):
+        very_long_title = "C" * 300
+        very_long_journal = "Journal of Very Long Name " * 10
+        fname = generate_citation_filename(
+            very_long_title,
+            single_author,
+            2023,
+            include_journal=True,
+            journal=very_long_journal,
+        )
+        assert len(fname) <= 200
+        assert fname.endswith(".pdf")

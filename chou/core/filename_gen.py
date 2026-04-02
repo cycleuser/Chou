@@ -1,5 +1,9 @@
 """
 Citation filename generation
+
+Supports both Chinese and English filename formats:
+- Chinese: 张三 等 (2023) - 中文标题.pdf
+- English: Smith et al. (2023) - English Title.pdf
 """
 
 import re
@@ -7,6 +11,39 @@ from typing import List, Optional
 
 from .models import Author, AuthorFormat
 from ..utils.constants import INVALID_FILENAME_CHARS, MAX_FILENAME_LENGTH
+from ..utils.chinese_utils import count_cjk_chars
+
+
+def _is_chinese_paper(title: str, authors: List[Author]) -> bool:
+    """
+    Determine if the paper is primarily Chinese based on title and authors.
+    
+    Args:
+        title: Paper title
+        authors: List of authors
+        
+    Returns:
+        True if the paper appears to be Chinese
+    """
+    if not title and not authors:
+        return False
+    
+    # Check title
+    if title:
+        title_cjk_ratio = count_cjk_chars(title) / max(len(title), 1)
+        if title_cjk_ratio > 0.3:
+            return True
+    
+    # Check authors
+    if authors:
+        cjk_author_count = sum(
+            1 for a in authors 
+            if _is_chinese_name(a.full_name)
+        )
+        if cjk_author_count > len(authors) * 0.5:
+            return True
+    
+    return False
 
 
 def abbreviate_title(title: str, max_length: int = 50) -> str:
@@ -83,7 +120,8 @@ def sanitize_filename(name: str) -> str:
 def format_authors_for_filename(
     authors: List[Author],
     format_type: AuthorFormat,
-    n: int = 3
+    n: int = 3,
+    use_chinese: bool = False
 ) -> Optional[str]:
     """
     Format author list according to specified format.
@@ -95,6 +133,7 @@ def format_authors_for_filename(
         authors: List of Author objects
         format_type: Author format type
         n: Number of authors for n_surnames/n_full formats
+        use_chinese: If True, use Chinese format (等 instead of et al.)
         
     Returns:
         Formatted author string for filename
@@ -102,12 +141,12 @@ def format_authors_for_filename(
     if not authors:
         return None
     
-    # Check if first author has Chinese name
+    et_al = "等" if use_chinese else "et al."
+    
     first_author = authors[0]
     first_is_chinese = _is_chinese_name(first_author.full_name)
     
     if format_type == AuthorFormat.FIRST_SURNAME:
-        # Use full name for Chinese authors
         if first_is_chinese:
             return first_author.full_name
         return first_author.surname
@@ -116,7 +155,6 @@ def format_authors_for_filename(
         return first_author.full_name
     
     elif format_type == AuthorFormat.ALL_SURNAMES:
-        # For Chinese names, use full names
         names = []
         for a in authors:
             if _is_chinese_name(a.full_name):
@@ -124,17 +162,16 @@ def format_authors_for_filename(
             else:
                 names.append(a.surname)
         if len(names) > 5:
-            return ', '.join(names[:5]) + ' et al.'
+            return ', '.join(names[:5]) + f' {et_al}'
         return ', '.join(names)
     
     elif format_type == AuthorFormat.ALL_FULL:
         names = [a.full_name for a in authors]
         if len(names) > 3:
-            return ', '.join(names[:3]) + ' et al.'
+            return ', '.join(names[:3]) + f' {et_al}'
         return ', '.join(names)
     
     elif format_type == AuthorFormat.N_SURNAMES:
-        # For Chinese names, use full names
         names = []
         for a in authors[:n]:
             if _is_chinese_name(a.full_name):
@@ -142,13 +179,13 @@ def format_authors_for_filename(
             else:
                 names.append(a.surname)
         if len(authors) > n:
-            return ', '.join(names) + ' et al.'
+            return ', '.join(names) + f' {et_al}'
         return ', '.join(names)
     
     elif format_type == AuthorFormat.N_FULL:
         names = [a.full_name for a in authors[:n]]
         if len(authors) > n:
-            return ', '.join(names) + ' et al.'
+            return ', '.join(names) + f' {et_al}'
         return ', '.join(names)
     
     return first_author.surname
@@ -170,7 +207,11 @@ def generate_citation_filename(
     """
     Generate citation-style filename.
     
-    Format: 'Author(s) (Year) - Title.pdf' or with journal: 'Author(s) (Year) - Journal - Title.pdf'
+    Automatically detects paper language and uses appropriate format:
+    - Chinese: 作者 等 (年份) - 中文标题.pdf
+    - English: Author et al. (Year) - English Title.pdf
+    
+    Ensures the final filename does not exceed system limits (typically 255 bytes).
     
     Args:
         title: Paper title
@@ -188,31 +229,58 @@ def generate_citation_filename(
     Returns:
         Generated filename
     """
-    # Abbreviate title if requested
+    is_chinese = _is_chinese_paper(title, authors)
+    
     title_clean = sanitize_filename(title)
     if abbreviate_titles:
         title_clean = abbreviate_title(title_clean, max_title_length)
     
-    author_str = format_authors_for_filename(authors, author_format, n)
+    author_str = format_authors_for_filename(
+        authors, 
+        author_format, 
+        n,
+        use_chinese=is_chinese
+    )
     if not author_str:
-        author_str = "Unknown"
+        author_str = "Unknown" if not is_chinese else "未知"
     author_clean = sanitize_filename(author_str)
     
-    # Build filename parts
     parts = [author_clean, f"({year})"]
     
-    # Add journal if requested and available
     if include_journal and journal:
         journal_clean = sanitize_filename(journal)
         if abbreviate_journal and len(journal_clean) > max_journal_length:
             journal_clean = abbreviate_title(journal_clean, max_journal_length)
         parts.append(f"- {journal_clean}")
     
-    # Add title
     parts.append(f"- {title_clean}")
     
-    # Add "et al." only for single-author formats when there are multiple authors
-    if author_format in [AuthorFormat.FIRST_SURNAME, AuthorFormat.FIRST_FULL] and len(authors) > 1:
-        return f"{parts[0]} et al. {' '.join(parts[1:])}.pdf"
+    add_et_al = author_format in [AuthorFormat.FIRST_SURNAME, AuthorFormat.FIRST_FULL] and len(authors) > 1
+    
+    if add_et_al:
+        et_al = "等" if is_chinese else "et al."
+        filename = f"{parts[0]} {et_al} {' '.join(parts[1:])}.pdf"
     else:
-        return f"{' '.join(parts)}.pdf"
+        filename = f"{' '.join(parts)}.pdf"
+    
+    max_total_length = MAX_FILENAME_LENGTH
+    if len(filename) > max_total_length:
+        if add_et_al:
+            et_al = "等" if is_chinese else "et al."
+            prefix = f"{parts[0]} {et_al} {parts[1]}"
+        else:
+            prefix = f"{parts[0]} {parts[1]}"
+        
+        suffix = ".pdf"
+        available = max_total_length - len(prefix) - len(suffix) - 3
+        
+        if available > 10:
+            truncated_title = title_clean[:available]
+            last_space = truncated_title.rfind(' ')
+            if last_space > available * 0.5:
+                truncated_title = truncated_title[:last_space]
+            filename = f"{prefix} - {truncated_title.strip()}{suffix}"
+        else:
+            filename = filename[:max_total_length-4] + ".pdf"
+    
+    return filename
